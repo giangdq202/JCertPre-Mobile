@@ -1,11 +1,11 @@
 import axiosInstance from "../const/axios/axiosInstance";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   LOGIN_URL,
   LOGOUT_URL,
   REGISTER_URL,
-  REFRESH_TOKEN,
+  REFRESH_TOKEN_URL,
 } from "../const/apiUrl/baseUrl";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 interface UserInfoResponse {
   id: string;
@@ -19,14 +19,6 @@ interface AuthSuccessResponse {
   accessToken: string;
   refreshToken: string;
   user: UserInfoResponse;
-}
-
-interface RegisterPayload {
-  email: string;
-  password: string;
-  fullName: string;
-  phone?: string | null;
-  avatarUrl?: string | null;
 }
 
 interface LoginPayload {
@@ -44,14 +36,15 @@ interface RefreshTokenPayload {
   refreshToken: string;
 }
 
-export const register = async (registerData: RegisterPayload) => {
+// ===== REGISTER =====
+export const register = async (registerData: FormData) => {
   try {
     const response = await axiosInstance.post<AuthSuccessResponse>(
       REGISTER_URL,
-      registerData
+      registerData,
+      { headers: { "Content-Type": "multipart/form-data" } }
     );
 
-    // Lưu token vào AsyncStorage sau khi đăng ký thành công
     await AsyncStorage.setItem("accessToken", response.data.accessToken);
     await AsyncStorage.setItem("refreshToken", response.data.refreshToken);
 
@@ -62,6 +55,7 @@ export const register = async (registerData: RegisterPayload) => {
   }
 };
 
+// ===== LOGIN =====
 export const login = async (loginData: LoginPayload) => {
   try {
     const response = await axiosInstance.post<AuthSuccessResponse>(
@@ -79,6 +73,7 @@ export const login = async (loginData: LoginPayload) => {
   }
 };
 
+// ===== LOGOUT =====
 export const logout = async () => {
   try {
     const accessToken = await AsyncStorage.getItem("accessToken");
@@ -89,7 +84,6 @@ export const logout = async () => {
         accessToken,
         refreshToken,
       };
-
       await axiosInstance.post(LOGOUT_URL, logoutData);
       console.log("Logged out successfully on backend.");
     } else {
@@ -98,10 +92,29 @@ export const logout = async () => {
   } catch (error) {
     console.error("Logout API error:", error);
   } finally {
-    // Luôn xoá token khỏi AsyncStorage
     await AsyncStorage.removeItem("accessToken");
     await AsyncStorage.removeItem("refreshToken");
   }
 };
 
+// ===== REFRESH TOKEN =====
+export const refreshToken = async (
+  accessToken: string,
+  oldRefreshToken: string
+) => {
+  try {
+    const payload: RefreshTokenPayload = {
+      accessToken,
+      refreshToken: oldRefreshToken,
+    };
 
+    const res = await axiosInstance.post<AuthSuccessResponse>(
+      REFRESH_TOKEN_URL,
+      payload
+    );
+    return res.data; // chứa accessToken, refreshToken, user
+  } catch (error) {
+    console.error("Refresh token service error:", error);
+    throw error;
+  }
+};

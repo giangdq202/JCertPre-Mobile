@@ -1,25 +1,28 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
-  StyleSheet,
-  Image,
-  Dimensions,
-  FlatList,
-  TouchableOpacity,
   TextInput,
-  ScrollView,
+  FlatList,
+  Image,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
   ImageBackground,
+  Dimensions,
 } from "react-native";
-
 import Carousel from "react-native-reanimated-carousel";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
-
 import { useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { StackNavigationProp } from "@react-navigation/stack";
 
 import backgroundImage from "../../assets/home.png";
 import { AppStackParamList } from "../../navigation/types";
+import {
+  getCourses,
+  CourseListDto,
+  CourseQueryParameters,
+} from "../../services/courseService";
 
 const { width } = Dimensions.get("window");
 
@@ -27,14 +30,6 @@ const slides = [
   require("../../assets/slide1.png"),
   require("../../assets/slide2.png"),
   require("../../assets/slide3.png"),
-];
-
-const courseImages = [
-  require("../../assets/course1.png"),
-  require("../../assets/course2.png"),
-  require("../../assets/course3.png"),
-  require("../../assets/course4.png"),
-  require("../../assets/course5.png"),
 ];
 
 const categories = [
@@ -54,77 +49,42 @@ const categories = [
   { id: "4", title: "Luyện thi", icon: "medal-outline", color: "#C0CA33" },
 ];
 
-// Dữ liệu khóa học
-const courses = [
-  {
-    id: 1,
-    title: "JLPT N5 Complete Course - Beginner Japanese",
-    description:
-      "Khoá học chuẩn bị toàn diện cho kỳ thi JLPT N5, bao gồm hiragana, katakana, 100 chữ kanji cơ bản, các mẫu ngữ pháp thiết yếu và hơn 800 từ vựng. Phù hợp với người mới bắt đầu.",
-    price: 1_500_000,
-    thumbnail: require("../../assets/course5.png"),
-  },
-  {
-    id: 2,
-    title: "JLPT N4 Intermediate Course",
-    description:
-      "Nâng cao ngữ pháp và từ vựng cho trình độ JLPT N4. Tập trung vào các cấu trúc câu và từ vựng trung cấp, giúp bạn giao tiếp tự tin hơn.",
-    price: 1_800_000,
-    thumbnail: require("../../assets/course4.png"),
-  },
-  {
-    id: 3,
-    title: "JLPT N3 Advanced Course",
-    description:
-      "Khoá học luyện thi JLPT N3 với ngữ pháp nâng cao, từ vựng chuyên sâu và luyện tập Kanji tầm trung. Dành cho người học muốn đạt trình độ trung cấp cao.",
-    price: 2_100_000,
-    thumbnail: require("../../assets/course3.png"),
-  },
-  {
-    id: 4,
-    title: "Luyện thi JLPT N2 chuyên sâu",
-    description:
-      "Khoá học chuyên sâu chuẩn bị cho JLPT N2, tập trung vào đọc hiểu, nghe hiểu và sử dụng ngữ pháp phức tạp. Dành cho người học có nền tảng vững chắc.",
-    price: 2_500_000,
-    thumbnail: require("../../assets/course2.png"),
-  },
-  {
-    id: 5,
-    title: "Luyện thi JLPT N1 cấp tốc",
-    description:
-      "Khoá học cấp tốc dành cho kỳ thi JLPT N1, luyện tập các đề thi thử, từ vựng nâng cao và kỹ năng đọc hiểu sâu. Phù hợp với người học trình độ cao.",
-    price: 2_800_000,
-    thumbnail: require("../../assets/course1.png"),
-  },
-];
-
 export default function HomeScreen() {
-  const navigation =
-    useNavigation<NativeStackNavigationProp<AppStackParamList>>();
+  const navigation = useNavigation<StackNavigationProp<AppStackParamList>>();
   const [searchText, setSearchText] = useState("");
+  const [courses, setCourses] = useState<CourseListDto[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
 
-  // Render từng slide carousel
-  const renderSlide = (slide: any, index: number) => (
-    <Image
-      key={index}
-      source={slide}
-      style={styles.slideImage}
-      resizeMode="cover"
-    />
+  useEffect(() => {
+    fetchCourses();
+  }, []);
+
+  const fetchCourses = async () => {
+    try {
+      setLoading(true);
+      const params: CourseQueryParameters = { pageNumber: 1, pageSize: 20 };
+      const res = await getCourses(params);
+      setCourses(res.items);
+    } catch (error) {
+      console.error("Error fetching courses:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredCourses = courses.filter((course) =>
+    course.title.toLowerCase().includes(searchText.toLowerCase())
   );
 
-  // Render từng mục danh mục
   const renderCategory = ({ item }: { item: any }) => (
     <TouchableOpacity
       key={item.id}
       style={[styles.categoryItem, { borderColor: item.color }]}
+      onPress={() =>
+        item.title === "Flashcard" && navigation.navigate("Flashcard")
+      }
       activeOpacity={0.7}
-      onPress={() => {
-        if (item.title === "Flashcard") {
-          navigation.navigate("Flashcard");
-        }
-      }}
     >
       <MaterialCommunityIcons
         name={item.icon}
@@ -138,23 +98,71 @@ export default function HomeScreen() {
     </TouchableOpacity>
   );
 
-  // Render từng card khóa học
-  const renderCourse = ({ item }: { item: any }) => (
-    <View style={styles.courseCard} key={item.id}>
-      <Image source={item.thumbnail} style={styles.courseImage} />
-      <View style={{ flex: 1, paddingHorizontal: 12 }}>
+  const renderCourse = ({ item }: { item: CourseListDto }) => (
+    <TouchableOpacity
+      key={item.courseId}
+      style={styles.courseCard}
+      onPress={() => navigation.navigate("CourseDetail", { course: item })}
+      activeOpacity={0.9}
+    >
+      {/* Thumbnail */}
+      <View style={styles.thumbnailWrapper}>
+        <Image
+          source={{ uri: item.thumbnailUrl }}
+          style={styles.courseImage}
+          resizeMode="cover"
+        />
+        {/* Level Badge */}
+        <View
+          style={[
+            styles.levelBadge,
+            { backgroundColor: getLevelColor(item.level) },
+          ]}
+        >
+          <Text style={styles.levelText}>
+            {["N5", "N4", "N3", "N2", "N1"][item.level]}
+          </Text>
+        </View>
+      </View>
+
+      {/* Content */}
+      <View style={styles.courseContent}>
         <Text style={styles.courseTitle} numberOfLines={2}>
           {item.title}
         </Text>
         <Text style={styles.courseDesc} numberOfLines={3}>
           {item.description}
         </Text>
-        <Text style={styles.coursePrice}>
-          {item.price.toLocaleString()} VNĐ
-        </Text>
+
+        {/* Footer: Price + Button */}
+        <View style={styles.courseFooter}>
+          <View style={styles.priceTag}>
+            <Text style={styles.coursePrice}>
+              {item.price.toLocaleString("vi-VN")} VND
+            </Text>
+          </View>
+          <TouchableOpacity style={styles.detailButton}>
+            <Text style={styles.detailButtonText}>Xem chi tiết</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
+
+  const getLevelColor = (level: number) => {
+    const colors = ["#34D399", "#60A5FA", "#FBBF24", "#F87171", "#A78BFA"];
+    return colors[level] || "#10b981";
+  };
+
+  // Loading State
+  if (loading) {
+    return (
+      <View style={[styles.background, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color="#10b981" />
+        <Text style={styles.loadingText}>Đang tải khóa học...</Text>
+      </View>
+    );
+  }
 
   return (
     <ImageBackground
@@ -163,9 +171,9 @@ export default function HomeScreen() {
       resizeMode="cover"
     >
       <FlatList
-        data={courses}
+        data={filteredCourses}
         renderItem={renderCourse}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(item) => item.courseId.toString()}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.contentContainer}
         ListHeaderComponent={
@@ -175,7 +183,7 @@ export default function HomeScreen() {
               <MaterialCommunityIcons
                 name="magnify"
                 size={20}
-                color="#A0A0A0"
+                color="#777"
                 style={styles.searchIcon}
               />
               <TextInput
@@ -183,11 +191,12 @@ export default function HomeScreen() {
                 style={styles.searchInput}
                 value={searchText}
                 onChangeText={setSearchText}
-                placeholderTextColor="#B0B0B0"
-                returnKeyType="search"
+                placeholderTextColor="#777"
+                keyboardType="default"
               />
             </View>
 
+            {/* Carousel */}
             <Carousel
               loop
               autoPlay
@@ -233,274 +242,186 @@ export default function HomeScreen() {
             </View>
           </>
         }
-        ListFooterComponent={
-          <View style={styles.infoSection}>
-            <Text style={styles.infoTitle}>
-              Tại sao nên học tiếng Nhật với chúng tôi?
-            </Text>
-            <View>
-              {[
-                "Chương trình biên soạn chuẩn JLPT, cập nhật liên tục.",
-                "Giảng viên kinh nghiệm, hỗ trợ tận tình 24/7.",
-                "Tài liệu đa dạng: video, bài tập tương tác, luyện đề thi thật.",
-                "Cộng đồng học viên đông đảo, hỗ trợ nhau phát triển.",
-              ].map((text, i) => (
-                <Text key={i} style={styles.infoText}>
-                  • {text}
-                </Text>
-              ))}
-            </View>
-          </View>
-        }
       />
     </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  background: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-  },
-
-  contentContainer: {
-    paddingHorizontal: 20,
-    paddingBottom: 120,
-  },
-
-  container: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-    paddingTop: 48,
-  },
-
+  background: { flex: 1, backgroundColor: "#FFFFFF" },
+  contentContainer: { paddingHorizontal: 20, paddingBottom: 120 },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F7F7F7",
-    borderRadius: 12,
+    backgroundColor: "#F1F3F4",
+    borderRadius: 16,
     paddingHorizontal: 16,
     paddingVertical: 8,
     marginHorizontal: 16,
-    marginTop: 40,
-    marginBottom: 16,
-    shadowColor: "transparent",
-    elevation: 0,
+    marginTop: 25,
+    marginBottom: 12,
   },
-
-  searchIcon: {
-    marginRight: 10,
-    color: "#A0A0A0",
-  },
-
-  searchInput: {
-    flex: 1,
-    fontSize: 15,
-    color: "#3C3C3C",
-    fontWeight: "400",
-    paddingVertical: 0,
-    fontFamily: "System",
-  },
-
-  carouselWrapper: {
-    borderRadius: 12,
-    overflow: "hidden",
-    marginBottom: 28,
-    backgroundColor: "#F9FAFB",
-    shadowColor: "#00000020",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-
-  carouselImage: {
-    width: width - 40,
-    height: 180,
-    borderRadius: 12,
-  },
-
-  carouselItem: {
-    borderRadius: 16,
-    overflow: "hidden",
-  },
+  searchIcon: { marginRight: 10 },
+  searchInput: { flex: 1, fontSize: 16, color: "#333", paddingVertical: 0 },
+  carouselImage: { width: width - 40, height: 180, borderRadius: 12 },
+  carouselItem: { borderRadius: 16, overflow: "hidden" },
   carouselOverlay: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "rgba(0,0,0,0.1)",
   },
-  pagination: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginTop: 8,
-  },
+  pagination: { flexDirection: "row", justifyContent: "center", marginTop: 8 },
   activeDot: {
-    backgroundColor: "#F8BBD0", // Sakura pastel
+    backgroundColor: "#10b981",
     width: 10,
     height: 10,
     borderRadius: 5,
     marginHorizontal: 4,
-    shadowColor: "#F8BBD0",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
   },
   dot: {
-    backgroundColor: "#FCE4EC", // Hồng nhạt hơn cho dot chưa active
+    backgroundColor: "#d1fae5",
     width: 8,
     height: 8,
     borderRadius: 4,
     marginHorizontal: 4,
   },
-
   welcomeText: {
     fontSize: 18,
     fontWeight: "600",
     textAlign: "center",
-    color: "#4A5A6A", // xám xanh trầm ấm
+    color: "#4A5A6A",
     marginTop: 12,
     marginBottom: 20,
-    marginHorizontal: 20,
     lineHeight: 26,
     fontStyle: "italic",
   },
-
-  welcomeHighlight: {
-    fontWeight: "700",
-    color: "#66BB6A", // xanh lá làm điểm nhấn tươi sáng
-  },
-
-  highlight: {
-    fontWeight: "700",
-    color: "#66BB6A",
-  },
-
+  welcomeHighlight: { fontWeight: "700", color: "#10b981" },
   categoriesContainer: {
-    paddingHorizontal: 16,
-    marginBottom: 32,
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
+    marginBottom: 32,
   },
-
   categoryItem: {
     width: (width - 32 - 4 * 4) / 5,
     height: 78,
-    backgroundColor: "#F7FAFC", // nền trắng ngả xanh nhẹ
+    backgroundColor: "#F7FAFC",
     borderRadius: 16,
     marginBottom: 12,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#D9E2EC", // viền xám xanh nhẹ, thanh thoát
-    shadowColor: "#00000011",
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    borderColor: "#D9E2EC",
   },
-
-  categoryText: {
-    fontSize: 13,
-    fontWeight: "600",
-    textAlign: "center",
-    color: "#52796F", // xanh lá tối nhẹ, không quá nổi bật
-  },
-
-  courseSection: {
-    marginBottom: 24,
-  },
-
-  sectionTitleWrapper: {
-    marginBottom: 14,
-    marginHorizontal: 8,
-  },
-
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#375A53", // xanh đậm trầm để làm tiêu đề
-    letterSpacing: 0.5,
-    lineHeight: 28,
-  },
-
+  categoryText: { fontSize: 13, fontWeight: "600", textAlign: "center" },
+  sectionTitleWrapper: { marginBottom: 14 },
+  sectionTitle: { fontSize: 20, fontWeight: "700", color: "#375A53" },
   courseCard: {
     flexDirection: "row",
-    backgroundColor: "#FFFFFF", // nền trắng sạch
+    backgroundColor: "#fff",
     borderRadius: 16,
-    marginBottom: 20,
-    width: "100%",
-    padding: 14,
-    borderWidth: 1,
-    borderColor: "#D9E2EC", // viền nhẹ màu xám xanh
-    shadowColor: "#00000011",
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 3,
+    marginBottom: 16,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 6 },
+    shadowRadius: 10,
+    elevation: 5,
+  },
+
+  thumbnailWrapper: {
+    width: 120,
+    height: 120,
+    borderTopLeftRadius: 16,
+    borderBottomLeftRadius: 16,
+    overflow: "hidden",
+    position: "relative",
   },
 
   courseImage: {
-    width: 100,
-    height: 80,
-    borderRadius: 12,
-    marginRight: 12,
-    resizeMode: "cover",
-    backgroundColor: "#E3F1DF", // nền xanh lá rất nhạt, dịu mắt khi ảnh chưa tải
+    width: "100%",
+    height: "100%",
+    borderTopLeftRadius: 16,
+    borderBottomLeftRadius: 16,
+    backgroundColor: "#E3F1DF",
+  },
+
+  levelBadge: {
+    position: "absolute",
+    top: 8,
+    left: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+
+  levelText: {
+    color: "white",
+    fontWeight: "700",
+    fontSize: 12,
+  },
+
+  courseContent: {
+    flex: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    justifyContent: "space-between",
   },
 
   courseTitle: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: "700",
-    color: "#375A53", // xanh đậm để nổi bật vừa phải
-    marginBottom: 6,
+    color: "#1F2937",
+    marginBottom: 4,
   },
 
   courseDesc: {
-    fontSize: 14,
-    color: "#63707D", // xám xanh vừa phải, dễ đọc
-    lineHeight: 20,
+    fontSize: 13,
+    color: "#4B5563",
     marginBottom: 8,
+    lineHeight: 18,
+  },
+
+  courseFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+
+  priceTag: {
+    backgroundColor: "#10B981",
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
 
   coursePrice: {
-    fontSize: 15,
+    color: "white",
     fontWeight: "700",
-    color: "#4C956C", // xanh lá nhẹ nhàng, làm nổi bật giá
+    fontSize: 13,
   },
 
-  infoSection: {
-    backgroundColor: "#F0FAF4", // xanh nhạt làm nền nhẹ nhàng
-    marginHorizontal: 16,
-    borderRadius: 20,
-    paddingVertical: 24,
-    paddingHorizontal: 22,
-    marginTop: 40,
-    marginBottom: 60,
-    shadowColor: "#66BB6A33",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    elevation: 4,
+  detailButton: {
+    backgroundColor: "#3B82F6",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
 
-  infoTitle: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#375A53",
-    marginBottom: 18,
-    letterSpacing: 0.4,
+  detailButtonText: {
+    color: "white",
+    fontWeight: "600",
+    fontSize: 13,
   },
 
-  infoText: {
-    fontSize: 15,
-    color: "#506870",
-    lineHeight: 26,
-    marginBottom: 10,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f8fafc",
   },
-
-  slideImage: {
-    width: width - 40,
-    height: 180,
-    borderRadius: 16,
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: "#4b5563",
   },
 });

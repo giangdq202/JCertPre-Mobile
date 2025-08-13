@@ -15,21 +15,26 @@ import CourseDetailScreen from "../screens/course/CourseDetailScreen";
 
 // Profile
 import ProfileDetailScreen from "../screens/profile/ProfileDetailScreen";
-import TransactionHistoryScreen from "../screens/profile/TransactionHistoryScreen";
+import PaymentHistoryScreen from "../screens/profile/PaymentHistoryScreen";
+import CreditScreen from "../screens/profile/CreditScreen";
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
 
 const AppStack = () => {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
       {/* Main Tabs */}
       <Stack.Screen name="MainTabs" component={BottomTabNavigator} />
 
-      {/* Flashcards */}
+      {/* Flashcard */}
       <Stack.Screen name="Flashcard" component={FlashcardScreen} />
       <Stack.Screen name="FlashcardDetail" component={FlashcardDetailScreen} />
 
-      {/* Courses */}
+      {/* Course */}
       <Stack.Screen name="CourseDetail" component={CourseDetailScreen} />
 
       {/* Profile */}
@@ -40,7 +45,13 @@ const AppStack = () => {
       />
       <Stack.Screen
         name="TransactionHistory"
-        component={TransactionHistoryScreen}
+        component={PaymentHistoryScreen}
+        options={{ headerShown: true, title: "Lịch sử thanh toán" }}
+      />
+      <Stack.Screen
+        name="Credit"
+        component={CreditScreen}
+        options={{ headerShown: true, title: "Số dư & Lịch sử Credit" }}
       />
     </Stack.Navigator>
   );

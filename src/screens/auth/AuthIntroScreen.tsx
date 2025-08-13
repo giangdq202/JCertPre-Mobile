@@ -7,23 +7,22 @@ import {
   ImageBackground,
   TouchableOpacity,
 } from "react-native";
-import { StatusBar } from "expo-status-bar";
 import * as Animatable from "react-native-animatable";
 
 import logo from "../../assets/logo.png";
 import background from "../../assets/background_login.jpg";
 
-const ACCENT_COLOR = "#66BB6A";
-const WHITE = "#fff";
+const PRIMARY_COLOR = "#66BB6A";
+const SECONDARY_COLOR = "#fff";
+const ACCENT_COLOR = "#4CAF50";
 
 const AuthIntroScreen = ({ navigation }: any) => {
   return (
     <ImageBackground source={background} style={styles.background}>
-      {/* Overlay mờ đen để làm nổi bật nội dung */}
       <View style={styles.overlay} />
 
       <View style={styles.container}>
-        {/* Logo với hiệu ứng zoomIn */}
+        {/* Logo */}
         <Animatable.View
           animation="zoomIn"
           delay={200}
@@ -34,7 +33,7 @@ const AuthIntroScreen = ({ navigation }: any) => {
           <Image source={logo} style={styles.logo} />
         </Animatable.View>
 
-        {/* Tiêu đề với hiệu ứng fadeInDown */}
+        {/* Title */}
         <Animatable.Text
           animation="fadeInDown"
           delay={400}
@@ -44,7 +43,7 @@ const AuthIntroScreen = ({ navigation }: any) => {
           Chào mừng đến với <Text style={styles.accentText}>JCertPre</Text>
         </Animatable.Text>
 
-        {/* Phụ đề với hiệu ứng fadeInDown nhẹ */}
+        {/* Subtitle */}
         <Animatable.Text
           animation="fadeInDown"
           delay={600}
@@ -54,7 +53,7 @@ const AuthIntroScreen = ({ navigation }: any) => {
           Nền tảng học & luyện thi JLPT chuyên sâu
         </Animatable.Text>
 
-        {/* Nút đăng nhập & đăng ký với hiệu ứng fadeInUp */}
+        {/* Buttons */}
         <Animatable.View
           animation="fadeInUp"
           delay={800}
@@ -77,8 +76,6 @@ const AuthIntroScreen = ({ navigation }: any) => {
             <Text style={styles.outlinedButtonText}>Đăng ký</Text>
           </TouchableOpacity>
         </Animatable.View>
-
-        <StatusBar style="light" />
       </View>
     </ImageBackground>
   );
@@ -127,7 +124,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: "bold",
-    color: WHITE,
+    color: SECONDARY_COLOR,
     textAlign: "center",
     marginBottom: 10,
     lineHeight: 36,
@@ -160,12 +157,12 @@ const styles = StyleSheet.create({
   },
 
   primaryButton: {
-    backgroundColor: ACCENT_COLOR,
+    backgroundColor: PRIMARY_COLOR,
     paddingVertical: 16,
     borderRadius: 14,
     alignItems: "center",
     marginBottom: 16,
-    shadowColor: ACCENT_COLOR,
+    shadowColor: PRIMARY_COLOR,
     shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.5,
     shadowRadius: 10,
@@ -173,7 +170,7 @@ const styles = StyleSheet.create({
   },
 
   primaryButtonText: {
-    color: WHITE,
+    color: SECONDARY_COLOR,
     fontSize: 18,
     fontWeight: "700",
   },
@@ -181,11 +178,11 @@ const styles = StyleSheet.create({
   outlinedButton: {
     backgroundColor: "rgba(255,255,255,0.87)",
     borderWidth: 2,
-    borderColor: ACCENT_COLOR,
+    borderColor: PRIMARY_COLOR,
     paddingVertical: 16,
     borderRadius: 14,
     alignItems: "center",
-    shadowColor: ACCENT_COLOR,
+    shadowColor: PRIMARY_COLOR,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.3,
     shadowRadius: 6,
@@ -193,7 +190,7 @@ const styles = StyleSheet.create({
   },
 
   outlinedButtonText: {
-    color: ACCENT_COLOR,
+    color: PRIMARY_COLOR,
     fontSize: 18,
     fontWeight: "700",
   },

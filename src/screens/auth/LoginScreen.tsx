@@ -24,14 +24,14 @@ const logo = require("../../assets/logo.png");
 type Props = NativeStackScreenProps<AuthStackParamList, "Login">;
 
 const COLORS = {
-  primaryGreen: "#66BB6A", // Màu chính - xanh lá dịu, không gắt
+  primaryGreen: "#66BB6A",
   white: "#FFFFFF",
-  grayLight: "#F7FAF6", // Nền input, nền nhẹ nhàng gần trắng
-  grayMedium: "#B0C4A5", // Viền input, label, chữ placeholder dịu nhẹ
-  grayDark: "#506B43", // Chữ chính nhẹ, không đen quá
-  greenLight: "#DFF4E1", // Nền hover, nền button disabled
-  greenShadow: "rgba(102, 187, 106, 0.3)", // Bóng xanh nhẹ cho hiệu ứng
-  textShadow: "rgba(0, 0, 0, 0.1)", // Đổ bóng chữ tinh tế
+  grayLight: "#F7FAF6",
+  grayMedium: "#B0C4A5",
+  grayDark: "#506B43",
+  greenLight: "#DFF4E1",
+  greenShadow: "rgba(102, 187, 106, 0.3)",
+  textShadow: "rgba(0, 0, 0, 0.1)",
 };
 
 const Login: React.FC<Props> = ({ navigation }) => {

@@ -1,7 +1,7 @@
 import axios, { AxiosHeaders } from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BASE_URL, REFRESH_TOKEN_URL } from "../apiUrl/baseUrl";
-import { refreshToken } from "../../services/tokenService";
+import { refreshToken } from "../../services/authService";
 
 // ================== Logout Callback ==================
 let onLogoutCallback: (() => void) | null = null;
@@ -14,7 +14,12 @@ const handleLogout = () => {
 };
 
 // ================== Axios Instance ==================
-const axiosInstance = axios.create({ baseURL: BASE_URL });
+const axiosInstance = axios.create({
+  baseURL: BASE_URL,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
 
 // ================== Request Interceptor ==================
 axiosInstance.interceptors.request.use(
@@ -37,31 +42,27 @@ axiosInstance.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalConfig = error.config;
-    const isAuthRefresh = originalConfig.url?.includes(REFRESH_TOKEN_URL);
+    const isAuthRefreshEndpoint =
+      originalConfig.url?.includes(REFRESH_TOKEN_URL);
 
-    // Nếu token hết hạn và chưa retry
     if (
       error.response?.status === 401 &&
       !originalConfig._retry &&
-      !isAuthRefresh
+      !isAuthRefreshEndpoint
     ) {
       originalConfig._retry = true;
 
-      try {
-        const [oldAccessToken, oldRefreshToken] = await Promise.all([
-          AsyncStorage.getItem("accessToken"),
-          AsyncStorage.getItem("refreshToken"),
-        ]);
+      const oldAccessToken = await AsyncStorage.getItem("accessToken");
+      const oldRefreshToken = await AsyncStorage.getItem("refreshToken");
 
-        if (oldAccessToken && oldRefreshToken) {
+      if (oldAccessToken && oldRefreshToken) {
+        try {
           const { accessToken: newAccessToken, refreshToken: newRefreshToken } =
             await refreshToken(oldAccessToken, oldRefreshToken);
 
           if (newAccessToken && newRefreshToken) {
-            await Promise.all([
-              AsyncStorage.setItem("accessToken", newAccessToken),
-              AsyncStorage.setItem("refreshToken", newRefreshToken),
-            ]);
+            await AsyncStorage.setItem("accessToken", newAccessToken);
+            await AsyncStorage.setItem("refreshToken", newRefreshToken);
 
             if (!originalConfig.headers)
               originalConfig.headers = new AxiosHeaders();
@@ -71,19 +72,21 @@ axiosInstance.interceptors.response.use(
             );
 
             return axiosInstance(originalConfig);
+          } else {
+            handleLogout();
+            return Promise.reject(error);
           }
+        } catch (refreshError) {
+          handleLogout();
+          return Promise.reject(refreshError);
         }
-
+      } else {
         handleLogout();
         return Promise.reject(error);
-      } catch (refreshError) {
-        handleLogout();
-        return Promise.reject(refreshError);
       }
     }
 
-    // Nếu lỗi 401 ngay khi refresh token
-    if (error.response?.status === 401 && isAuthRefresh) {
+    if (error.response?.status === 401 && isAuthRefreshEndpoint) {
       handleLogout();
     }
 

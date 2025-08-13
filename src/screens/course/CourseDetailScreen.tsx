@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -7,23 +7,79 @@ import {
   ScrollView,
   TouchableOpacity,
   Dimensions,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import { RouteProp, useNavigation, useRoute } from "@react-navigation/native";
-import { Course } from "../../navigation/types";
+import { RouteProp, useRoute, useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+
+import { AppStackParamList, Course } from "../../navigation/types";
+import {
+  checkEnrollmentStatus,
+  enrollSelfInCourse,
+  CheckEnrollmentStatusResult,
+} from "../../services/enrollmentService";
 
 const { width } = Dimensions.get("window");
 
-type CourseDetailRouteProp = RouteProp<
-  { params: { course: Course } },
-  "params"
+// Type cho navigation
+type NavigationProp = NativeStackNavigationProp<
+  AppStackParamList,
+  "CourseDetail"
 >;
+type RoutePropType = RouteProp<AppStackParamList, "CourseDetail">;
 
 const CourseDetailScreen = () => {
-  const navigation = useNavigation();
-  const route = useRoute<CourseDetailRouteProp>();
+  const navigation = useNavigation<NavigationProp>();
+  const route = useRoute<RoutePropType>();
   const { course } = route.params;
+
+  if (!course) {
+    return (
+      <View style={styles.loadingContainer}>
+        <Text>Không tìm thấy thông tin khóa học</Text>
+      </View>
+    );
+  }
+
+  const courseId = course.courseId;
+
+  const [courseDetail, setCourseDetail] = useState<Course>(course);
+  const [enrolled, setEnrolled] = useState(false);
+  const [checkingEnroll, setCheckingEnroll] = useState(true);
+
+  // Kiểm tra trạng thái ghi danh khi vào màn hình
+  useEffect(() => {
+    const fetchEnrollment = async () => {
+      try {
+        setCheckingEnroll(true);
+        const status: CheckEnrollmentStatusResult = await checkEnrollmentStatus(
+          courseId
+        );
+        setEnrolled(status.isEnrolled);
+      } catch (error) {
+        console.error("Lỗi kiểm tra ghi danh:", error);
+      } finally {
+        setCheckingEnroll(false);
+      }
+    };
+
+    fetchEnrollment();
+  }, [courseId]);
+
+  // Xử lý bấm đăng ký
+  const handleEnroll = () => {
+    if (checkingEnroll) return;
+
+    enrollSelfInCourse({ courseId: courseDetail.courseId })
+      .then(() => {
+        setEnrolled(true);
+        Alert.alert("Thành công", "Bạn đã đăng ký khóa học!");
+      })
+      .catch(() => Alert.alert("Lỗi", "Không thể đăng ký khóa học."));
+  };
 
   return (
     <LinearGradient colors={["#f0fdf4", "#ffffff"]} style={styles.container}>
@@ -35,26 +91,40 @@ const CourseDetailScreen = () => {
       </TouchableOpacity>
 
       <ScrollView showsVerticalScrollIndicator={false}>
-        <Image source={course.thumbnailUrl} style={styles.image} />
+        <Image
+          source={{ uri: courseDetail.thumbnailUrl }}
+          style={styles.image}
+        />
 
         <View style={styles.contentContainer}>
           <Text style={styles.levelBadge}>
-            Trình độ: JLPT {["N5", "N4", "N3", "N2", "N1"][course.level]}
+            Trình độ: JLPT {["N5", "N4", "N3", "N2", "N1"][courseDetail.level]}
           </Text>
 
-          <Text style={styles.title}>{course.title}</Text>
+          <Text style={styles.title}>{courseDetail.title}</Text>
 
           <Text style={styles.price}>
-            {course.price.toLocaleString("vi-VN")} VND
+            {courseDetail.price === 0
+              ? "Miễn phí"
+              : `${courseDetail.price.toLocaleString("vi-VN")} VND`}
           </Text>
 
           <View style={styles.sectionDivider} />
 
           <Text style={styles.sectionTitle}>Giới thiệu khóa học</Text>
-          <Text style={styles.description}>{course.description}</Text>
+          <Text style={styles.description}>{courseDetail.description}</Text>
 
-          <TouchableOpacity style={styles.enrollButton}>
-            <Text style={styles.enrollText}>Đăng ký ngay</Text>
+          <TouchableOpacity
+            style={[
+              styles.enrollButton,
+              enrolled && { backgroundColor: "#9ca3af" },
+            ]}
+            disabled={enrolled || checkingEnroll}
+            onPress={handleEnroll}
+          >
+            <Text style={styles.enrollText}>
+              {enrolled ? "Đã đăng ký" : "Đăng ký ngay"}
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -63,9 +133,7 @@ const CourseDetailScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   backButton: {
     position: "absolute",
     top: 50,
@@ -80,11 +148,7 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 3,
   },
-  image: {
-    width: width,
-    height: 240,
-    resizeMode: "cover",
-  },
+  image: { width: width, height: 240, resizeMode: "cover" },
   contentContainer: {
     paddingHorizontal: 20,
     paddingTop: 20,
@@ -113,11 +177,7 @@ const styles = StyleSheet.create({
     color: "#10b981",
     marginBottom: 20,
   },
-  sectionDivider: {
-    height: 1,
-    backgroundColor: "#e5e7eb",
-    marginBottom: 20,
-  },
+  sectionDivider: { height: 1, backgroundColor: "#e5e7eb", marginBottom: 20 },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "600",
@@ -141,11 +201,8 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 4,
   },
-  enrollText: {
-    color: "white",
-    fontSize: 16,
-    fontWeight: "600",
-  },
+  enrollText: { color: "white", fontSize: 16, fontWeight: "600" },
+  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
 });
 
 export default CourseDetailScreen;

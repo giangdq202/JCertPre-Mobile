@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -6,53 +6,58 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  Image,
+  ScrollView,
   KeyboardAvoidingView,
   Platform,
-  Animated,
 } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { AuthStackParamList } from "../../navigation/types";
-import { register } from "../../services/authService";
+import * as ImagePicker from "expo-image-picker";
 import Toast from "react-native-toast-message";
+import { register } from "../../services/authService";
+import { AuthStackParamList } from "../../navigation/types";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "Register">;
 
-const COLORS = {
-  primaryGreen: "#66BB6A",
-  white: "#FFFFFF",
-  grayLight: "#F7FAF6",
-  grayMedium: "#B0C4A5",
-  grayDark: "#506B43",
-  greenLight: "#DFF4E1",
-  greenShadow: "rgba(102, 187, 106, 0.3)",
-  textShadow: "rgba(0, 0, 0, 0.1)",
-};
-
-const Register: React.FC<Props> = ({ navigation }) => {
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+const RegisterScreen: React.FC<Props> = ({ navigation }) => {
+  const [formData, setFormData] = useState({
+    fullname: "",
+    email: "",
+    phone: "",
+    password: "",
+    confirmPassword: "",
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [avatar, setAvatar] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
 
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const handleInputChange = (field: string, value: string) => {
+    setFormData({ ...formData, [field]: value });
+  };
 
-  useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 400,
-      useNativeDriver: true,
-    }).start();
-  }, []);
+  const handleAvatarChange = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.7,
+    });
 
-  const onSubmit = async () => {
-    if (!fullName || !email || !password || !confirmPassword) {
+    if (!result.canceled) {
+      const selected = result.assets[0];
+      setAvatar({
+        uri: selected.uri,
+        name: selected.uri.split("/").pop(),
+        type: "image/jpeg",
+      });
+    }
+  };
+
+  const handleSubmit = async () => {
+    const { fullname, email, password, confirmPassword, phone } = formData;
+
+    if (!fullname || !email || !password || !confirmPassword) {
       Toast.show({
         type: "error",
         text1: "Thông báo",
@@ -70,17 +75,22 @@ const Register: React.FC<Props> = ({ navigation }) => {
       return;
     }
 
-    setIsLoading(true);
-
+    setLoading(true);
     try {
-      const payload = {
-        email,
-        password,
-        fullName,
-        phone: phone,
-      };
+      const payload = new FormData();
+      payload.append("FullName", fullname);
+      payload.append("Email", email);
+      payload.append("Password", password);
+      if (phone) payload.append("Phone", phone);
+      if (avatar) {
+        payload.append("AvatarFile", {
+          uri: avatar.uri,
+          name: avatar.name,
+          type: avatar.type,
+        } as any);
+      }
 
-      await register(payload);
+      const response = await register(payload);
 
       Toast.show({
         type: "success",
@@ -89,306 +99,195 @@ const Register: React.FC<Props> = ({ navigation }) => {
       });
 
       navigation.navigate("Login");
-    } catch (error: any) {
+    } catch (error) {
       console.error("Register error:", error);
-
-      const message =
-        error?.response?.data?.message ||
-        "Đăng ký thất bại. Vui lòng thử lại sau.";
-
       Toast.show({
         type: "error",
         text1: "Lỗi",
-        text2: message,
+        text2: "Đăng ký thất bại. Vui lòng thử lại sau.",
       });
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const handlePressIn = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 0.96,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  const handlePressOut = () => {
-    Animated.spring(scaleAnim, {
-      toValue: 1,
-      friction: 3,
-      tension: 40,
-      useNativeDriver: true,
-    }).start();
-  };
-
   return (
-    <LinearGradient
-      colors={[COLORS.white, COLORS.greenLight]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 0, y: 1 }}
-      style={styles.container}
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: "#fff" }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 60}
-      >
-        <View style={styles.innerContainer}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.navigate("AuthIntroScreen")}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name="chevron-back"
-              size={26}
-              color={COLORS.primaryGreen}
-              style={{
-                textShadowColor: COLORS.textShadow,
-                textShadowRadius: 3,
-              }}
-            />
-          </TouchableOpacity>
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.title}>Tạo tài khoản</Text>
+        <Text style={styles.subtitle}>
+          Tham gia hành trình học tiếng Nhật ngay hôm nay!
+        </Text>
 
-          <Animated.View style={[styles.titleContainer, { opacity: fadeAnim }]}>
-            <Text style={styles.title}>Tạo tài khoản</Text>
-            <Text style={styles.subtitle}>
-              Tham gia hành trình học tiếng Nhật ngay hôm nay!
-            </Text>
-          </Animated.View>
-
-          <Animated.View style={[styles.inputContainer, { opacity: fadeAnim }]}>
-            <Input
-              label="Họ và tên"
-              value={fullName}
-              onChangeText={setFullName}
-            />
-            <Input
-              label="Email"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-            <Input
-              label="Số điện thoại"
-              value={phone}
-              onChangeText={setPhone}
-              keyboardType="phone-pad"
-            />
-
-            <Input
-              label="Mật khẩu"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPassword}
-              hasToggle
-              onToggleVisibility={() => setShowPassword(!showPassword)}
-              isVisible={showPassword}
-            />
-
-            <Input
-              label="Xác nhận mật khẩu"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry={!showConfirmPassword}
-              hasToggle
-              onToggleVisibility={() =>
-                setShowConfirmPassword(!showConfirmPassword)
-              }
-              isVisible={showConfirmPassword}
-            />
-
-            <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-              <TouchableOpacity
-                style={[
-                  styles.registerButton,
-                  isLoading && styles.registerButtonDisabled,
-                ]}
-                onPress={onSubmit}
-                onPressIn={handlePressIn}
-                onPressOut={handlePressOut}
-                activeOpacity={0.8}
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <ActivityIndicator color={COLORS.white} />
-                ) : (
-                  <Text style={styles.registerText}>Đăng ký</Text>
-                )}
-              </TouchableOpacity>
-            </Animated.View>
-
-            <View style={styles.loginLinkContainer}>
-              <Text style={styles.loginText}>Đã có tài khoản?</Text>
-              <TouchableOpacity onPress={() => navigation.navigate("Login")}>
-                <Text style={styles.loginLink}> Đăng nhập</Text>
-              </TouchableOpacity>
+        {/* Avatar */}
+        <TouchableOpacity
+          style={styles.avatarWrapper}
+          onPress={handleAvatarChange}
+        >
+          {avatar ? (
+            <Image source={{ uri: avatar.uri }} style={styles.avatar} />
+          ) : (
+            <View style={styles.avatarPlaceholder}>
+              <Ionicons name="camera" size={28} color="#aaa" />
+              <Text style={{ color: "#aaa", marginTop: 4, fontSize: 12 }}>
+                Chọn ảnh
+              </Text>
             </View>
-          </Animated.View>
+          )}
+        </TouchableOpacity>
+
+        {/* Inputs */}
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="Họ và tên"
+            value={formData.fullname}
+            onChangeText={(text) => handleInputChange("fullname", text)}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            value={formData.email}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            onChangeText={(text) => handleInputChange("email", text)}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Số điện thoại (tùy chọn)"
+            keyboardType="phone-pad"
+            value={formData.phone}
+            onChangeText={(text) => handleInputChange("phone", text)}
+          />
+          <View style={styles.passwordWrapper}>
+            <TextInput
+              style={styles.input}
+              placeholder="Mật khẩu"
+              secureTextEntry={!showPassword}
+              value={formData.password}
+              onChangeText={(text) => handleInputChange("password", text)}
+            />
+            <TouchableOpacity
+              style={styles.eyeIcon}
+              onPress={() => setShowPassword(!showPassword)}
+            >
+              <Ionicons
+                name={showPassword ? "eye" : "eye-off"}
+                size={20}
+                color="#666"
+              />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.passwordWrapper}>
+            <TextInput
+              style={styles.input}
+              placeholder="Xác nhận mật khẩu"
+              secureTextEntry={!showConfirmPassword}
+              value={formData.confirmPassword}
+              onChangeText={(text) =>
+                handleInputChange("confirmPassword", text)
+              }
+            />
+            <TouchableOpacity
+              style={styles.eyeIcon}
+              onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+            >
+              <Ionicons
+                name={showConfirmPassword ? "eye" : "eye-off"}
+                size={20}
+                color="#666"
+              />
+            </TouchableOpacity>
+          </View>
         </View>
-      </KeyboardAvoidingView>
-    </LinearGradient>
+
+        {/* Button */}
+        <TouchableOpacity
+          style={[styles.button, loading && { opacity: 0.6 }]}
+          onPress={handleSubmit}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>Tạo tài khoản</Text>
+          )}
+        </TouchableOpacity>
+
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "center",
+            marginTop: 16,
+          }}
+        >
+          <Text>Đã có tài khoản? </Text>
+          <TouchableOpacity onPress={() => navigation.navigate("Login")}>
+            <Text style={{ color: "#E53935", fontWeight: "bold" }}>
+              Đăng nhập
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
-const Input = ({
-  label,
-  hasToggle = false,
-  isVisible = false,
-  onToggleVisibility,
-  ...props
-}: {
-  label: string;
-  value: string;
-  onChangeText: (text: string) => void;
-  hasToggle?: boolean;
-  isVisible?: boolean;
-  onToggleVisibility?: () => void;
-  [key: string]: any;
-}) => (
-  <View style={{ marginBottom: 14 }}>
-    <Text style={styles.label}>{label}</Text>
-    <View style={styles.inputWrapper}>
-      <TextInput
-        style={[styles.input, hasToggle && { paddingRight: 40 }]}
-        placeholderTextColor={COLORS.grayMedium}
-        {...props}
-      />
-      {hasToggle && onToggleVisibility && (
-        <TouchableOpacity style={styles.eyeIcon} onPress={onToggleVisibility}>
-          <Ionicons
-            name={isVisible ? "eye" : "eye-off"}
-            size={20}
-            color={COLORS.grayMedium}
-          />
-        </TouchableOpacity>
-      )}
-    </View>
-  </View>
-);
-
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  container: { flex: 1, backgroundColor: COLORS.white },
-  innerContainer: {
-    flex: 1,
-    paddingHorizontal: 28,
-    justifyContent: "center",
-  },
-  backButton: {
-    position: "absolute",
-    top: 50,
-    left: 20,
-    zIndex: 10,
-    backgroundColor: "rgba(102,187,106,0.15)",
-    padding: 8,
-    borderRadius: 30,
-    shadowColor: COLORS.primaryGreen,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.18,
-    shadowRadius: 6,
-    elevation: 5,
-  },
-  titleContainer: {
-    marginBottom: 20,
+  container: {
+    padding: 20,
+    paddingTop: 60,
     alignItems: "center",
   },
-  title: {
-    fontSize: 26,
-    fontWeight: "700",
-    color: COLORS.primaryGreen,
-    textShadowColor: COLORS.textShadow,
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 5,
-  },
+  title: { fontSize: 28, fontWeight: "700", color: "#66BB6A", marginBottom: 4 },
   subtitle: {
-    fontSize: 15,
-    color: COLORS.grayDark,
-    marginTop: 5,
+    fontSize: 14,
+    color: "#506B43",
+    marginBottom: 20,
     textAlign: "center",
-    fontWeight: "500",
-    lineHeight: 20,
-    paddingHorizontal: 20,
   },
-  inputContainer: {
-    backgroundColor: COLORS.grayLight,
-    borderRadius: 18,
-    paddingVertical: 20,
-    paddingHorizontal: 20,
-    shadowColor: COLORS.primaryGreen,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
+  avatarWrapper: { marginBottom: 20, alignItems: "center" },
+  avatarPlaceholder: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    justifyContent: "center",
+    alignItems: "center",
   },
-  label: {
-    fontWeight: "600",
-    fontSize: 13.5,
-    color: COLORS.primaryGreen,
-    marginBottom: 8,
+  avatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 1,
+    borderColor: "#E53935",
   },
-  inputWrapper: {
-    position: "relative",
-  },
+  inputContainer: { width: "100%" },
   input: {
-    backgroundColor: COLORS.white,
+    backgroundColor: "#F7FAF6",
     borderRadius: 14,
     paddingHorizontal: 14,
     paddingVertical: 12,
-    fontSize: 15,
-    color: COLORS.grayDark,
+    marginBottom: 12,
     borderWidth: 1,
-    borderColor: COLORS.grayMedium,
-    marginBottom: 16,
-    shadowColor: COLORS.primaryGreen,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.12,
-    shadowRadius: 4,
-    elevation: 2,
+    borderColor: "#B0C4A5",
   },
-  eyeIcon: {
-    position: "absolute",
-    right: 14,
-    top: 14,
-  },
-  registerButton: {
-    borderRadius: 18,
+  passwordWrapper: { position: "relative", marginBottom: 12 },
+  eyeIcon: { position: "absolute", right: 12, top: 12 },
+  button: {
+    backgroundColor: "#E53935",
+    width: "100%",
     paddingVertical: 14,
+    borderRadius: 25,
     alignItems: "center",
-    marginTop: 6,
-    backgroundColor: COLORS.primaryGreen,
-    shadowColor: COLORS.primaryGreen,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 14,
-    elevation: 9,
+    marginTop: 10,
   },
-  registerButtonDisabled: {
-    backgroundColor: COLORS.greenLight,
-  },
-  registerText: {
-    color: COLORS.white,
-    fontWeight: "700",
-    fontSize: 17,
-    letterSpacing: 0.4,
-  },
-  loginLinkContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginTop: 18,
-    marginBottom: 10,
-  },
-  loginText: {
-    color: COLORS.grayDark,
-    fontSize: 14,
-  },
-  loginLink: {
-    color: COLORS.primaryGreen,
-    fontSize: 14,
-    fontWeight: "700",
-  },
+  buttonText: { color: "#fff", fontWeight: "700", fontSize: 16 },
 });
 
-export default Register;
+export default RegisterScreen;
