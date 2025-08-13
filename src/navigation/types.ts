@@ -16,5 +16,19 @@ export type BottomTabParamList = {
 
 export type AppStackParamList = {
   MainTabs: undefined | { screen?: keyof BottomTabParamList };
+  Flashcard: undefined;
+  FlashcardDetail: undefined;
   TestDetail: { id: string };
+  CourseDetail: { course: Course };
+  ProfileDetail: undefined;
+  TransactionHistory: undefined;
+};
+
+export type Course = {
+  id: string;
+  title: string;
+  description: string;
+  level: number;
+  thumbnailUrl: any;
+  price: number;
 };

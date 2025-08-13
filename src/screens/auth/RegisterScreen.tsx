@@ -5,22 +5,30 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  Image,
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  ScrollView,
   Animated,
-  Alert,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { AuthStackParamList } from "../../navigation/types";
-
-const logo = require("../../assets/logo.png");
+import { register } from "../../services/authService";
+import Toast from "react-native-toast-message";
 
 type Props = NativeStackScreenProps<AuthStackParamList, "Register">;
+
+const COLORS = {
+  primaryGreen: "#66BB6A",
+  white: "#FFFFFF",
+  grayLight: "#F7FAF6",
+  grayMedium: "#B0C4A5",
+  grayDark: "#506B43",
+  greenLight: "#DFF4E1",
+  greenShadow: "rgba(102, 187, 106, 0.3)",
+  textShadow: "rgba(0, 0, 0, 0.1)",
+};
 
 const Register: React.FC<Props> = ({ navigation }) => {
   const [fullName, setFullName] = useState("");
@@ -38,28 +46,64 @@ const Register: React.FC<Props> = ({ navigation }) => {
   useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
-      duration: 500,
+      duration: 400,
       useNativeDriver: true,
     }).start();
   }, []);
 
-  const onSubmit = () => {
+  const onSubmit = async () => {
     if (!fullName || !email || !password || !confirmPassword) {
-      Alert.alert("Thông báo", "Vui lòng nhập đầy đủ thông tin bắt buộc.");
+      Toast.show({
+        type: "error",
+        text1: "Thông báo",
+        text2: "Vui lòng nhập đầy đủ thông tin bắt buộc.",
+      });
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert("Lỗi", "Mật khẩu xác nhận không khớp.");
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: "Mật khẩu xác nhận không khớp.",
+      });
       return;
     }
 
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      Alert.alert("Giả lập", "Đăng ký thành công.");
+
+    try {
+      const payload = {
+        email,
+        password,
+        fullName,
+        phone: phone,
+      };
+
+      await register(payload);
+
+      Toast.show({
+        type: "success",
+        text1: "Thành công",
+        text2: "Đăng ký thành công!",
+      });
+
       navigation.navigate("Login");
-    }, 1000);
+    } catch (error: any) {
+      console.error("Register error:", error);
+
+      const message =
+        error?.response?.data?.message ||
+        "Đăng ký thất bại. Vui lòng thử lại sau.";
+
+      Toast.show({
+        type: "error",
+        text1: "Lỗi",
+        text2: message,
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handlePressIn = () => {
@@ -79,27 +123,35 @@ const Register: React.FC<Props> = ({ navigation }) => {
   };
 
   return (
-    <LinearGradient colors={["#ecfdf5", "#ffffff"]} style={styles.container}>
+    <LinearGradient
+      colors={[COLORS.white, COLORS.greenLight]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0, y: 1 }}
+      style={styles.container}
+    >
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        style={styles.flex}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 60}
       >
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          keyboardShouldPersistTaps="handled"
-        >
+        <View style={styles.innerContainer}>
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.navigate("AuthIntroScreen")}
             activeOpacity={0.7}
           >
-            <Ionicons name="chevron-back" size={26} color="#14532d" />
+            <Ionicons
+              name="chevron-back"
+              size={26}
+              color={COLORS.primaryGreen}
+              style={{
+                textShadowColor: COLORS.textShadow,
+                textShadowRadius: 3,
+              }}
+            />
           </TouchableOpacity>
 
-          <Animated.View style={[styles.logoContainer, { opacity: fadeAnim }]}>
-            <View style={styles.logoWrapper}>
-              <Image source={logo} style={styles.logo} />
-            </View>
+          <Animated.View style={[styles.titleContainer, { opacity: fadeAnim }]}>
             <Text style={styles.title}>Tạo tài khoản</Text>
             <Text style={styles.subtitle}>
               Tham gia hành trình học tiếng Nhật ngay hôm nay!
@@ -150,7 +202,10 @@ const Register: React.FC<Props> = ({ navigation }) => {
 
             <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
               <TouchableOpacity
-                style={styles.registerButton}
+                style={[
+                  styles.registerButton,
+                  isLoading && styles.registerButtonDisabled,
+                ]}
                 onPress={onSubmit}
                 onPressIn={handlePressIn}
                 onPressOut={handlePressOut}
@@ -158,7 +213,7 @@ const Register: React.FC<Props> = ({ navigation }) => {
                 disabled={isLoading}
               >
                 {isLoading ? (
-                  <ActivityIndicator color="#fff" />
+                  <ActivityIndicator color={COLORS.white} />
                 ) : (
                   <Text style={styles.registerText}>Đăng ký</Text>
                 )}
@@ -172,13 +227,12 @@ const Register: React.FC<Props> = ({ navigation }) => {
               </TouchableOpacity>
             </View>
           </Animated.View>
-        </ScrollView>
+        </View>
       </KeyboardAvoidingView>
     </LinearGradient>
   );
 };
 
-// Custom Input Component
 const Input = ({
   label,
   hasToggle = false,
@@ -199,7 +253,7 @@ const Input = ({
     <View style={styles.inputWrapper}>
       <TextInput
         style={[styles.input, hasToggle && { paddingRight: 40 }]}
-        placeholderTextColor="#999"
+        placeholderTextColor={COLORS.grayMedium}
         {...props}
       />
       {hasToggle && onToggleVisibility && (
@@ -207,7 +261,7 @@ const Input = ({
           <Ionicons
             name={isVisible ? "eye" : "eye-off"}
             size={20}
-            color="#999"
+            color={COLORS.grayMedium}
           />
         </TouchableOpacity>
       )}
@@ -216,11 +270,11 @@ const Input = ({
 );
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scroll: {
-    padding: 20,
-    paddingBottom: 50,
-    flexGrow: 1,
+  flex: { flex: 1 },
+  container: { flex: 1, backgroundColor: COLORS.white },
+  innerContainer: {
+    flex: 1,
+    paddingHorizontal: 28,
     justifyContent: "center",
   },
   backButton: {
@@ -228,103 +282,112 @@ const styles = StyleSheet.create({
     top: 50,
     left: 20,
     zIndex: 10,
-  },
-  logoContainer: {
-    alignItems: "center",
-    marginBottom: 28,
-    marginTop: 60,
-  },
-  logoWrapper: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: "#fff",
-    justifyContent: "center",
-    alignItems: "center",
-    elevation: 5,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    backgroundColor: "rgba(102,187,106,0.15)",
+    padding: 8,
+    borderRadius: 30,
+    shadowColor: COLORS.primaryGreen,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.18,
     shadowRadius: 6,
+    elevation: 5,
   },
-  logo: {
-    width: 65,
-    height: 65,
-    resizeMode: "contain",
-    borderRadius: 32,
+  titleContainer: {
+    marginBottom: 20,
+    alignItems: "center",
   },
   title: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: "700",
-    color: "#14532d",
+    color: COLORS.primaryGreen,
+    textShadowColor: COLORS.textShadow,
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 5,
   },
   subtitle: {
+    fontSize: 15,
+    color: COLORS.grayDark,
+    marginTop: 5,
     textAlign: "center",
-    color: "#4b5563",
-    marginTop: 6,
-    fontSize: 13.5,
-    paddingHorizontal: 16,
+    fontWeight: "500",
+    lineHeight: 20,
+    paddingHorizontal: 20,
   },
   inputContainer: {
-    backgroundColor: "#fff",
-    padding: 20,
-    borderRadius: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: COLORS.grayLight,
+    borderRadius: 18,
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    shadowColor: COLORS.primaryGreen,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
   },
   label: {
     fontWeight: "600",
-    color: "#14532d",
-    fontSize: 14,
-    marginBottom: 6,
+    fontSize: 13.5,
+    color: COLORS.primaryGreen,
+    marginBottom: 8,
   },
   inputWrapper: {
     position: "relative",
   },
   input: {
+    backgroundColor: COLORS.white,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: COLORS.grayDark,
     borderWidth: 1,
-    borderColor: "#e5e7eb",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14.5,
-    backgroundColor: "#f9f9f9",
-    color: "#111",
+    borderColor: COLORS.grayMedium,
+    marginBottom: 16,
+    shadowColor: COLORS.primaryGreen,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 2,
   },
   eyeIcon: {
     position: "absolute",
-    right: 12,
-    top: 10,
+    right: 14,
+    top: 14,
   },
   registerButton: {
-    backgroundColor: "#22c55e",
+    borderRadius: 18,
     paddingVertical: 14,
-    borderRadius: 10,
     alignItems: "center",
-    marginTop: 4,
+    marginTop: 6,
+    backgroundColor: COLORS.primaryGreen,
+    shadowColor: COLORS.primaryGreen,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 14,
+    elevation: 9,
+  },
+  registerButtonDisabled: {
+    backgroundColor: COLORS.greenLight,
   },
   registerText: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 15.5,
+    color: COLORS.white,
+    fontWeight: "700",
+    fontSize: 17,
+    letterSpacing: 0.4,
   },
   loginLinkContainer: {
     flexDirection: "row",
     justifyContent: "center",
-    marginTop: 20,
+    marginTop: 18,
+    marginBottom: 10,
   },
   loginText: {
-    color: "#555",
+    color: COLORS.grayDark,
     fontSize: 14,
   },
   loginLink: {
-    color: "#15803d",
+    color: COLORS.primaryGreen,
     fontSize: 14,
-    fontWeight: "bold",
+    fontWeight: "700",
   },
 });
 

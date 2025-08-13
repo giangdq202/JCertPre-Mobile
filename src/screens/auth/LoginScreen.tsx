@@ -23,6 +23,17 @@ const logo = require("../../assets/logo.png");
 
 type Props = NativeStackScreenProps<AuthStackParamList, "Login">;
 
+const COLORS = {
+  primaryGreen: "#66BB6A", // Màu chính - xanh lá dịu, không gắt
+  white: "#FFFFFF",
+  grayLight: "#F7FAF6", // Nền input, nền nhẹ nhàng gần trắng
+  grayMedium: "#B0C4A5", // Viền input, label, chữ placeholder dịu nhẹ
+  grayDark: "#506B43", // Chữ chính nhẹ, không đen quá
+  greenLight: "#DFF4E1", // Nền hover, nền button disabled
+  greenShadow: "rgba(102, 187, 106, 0.3)", // Bóng xanh nhẹ cho hiệu ứng
+  textShadow: "rgba(0, 0, 0, 0.1)", // Đổ bóng chữ tinh tế
+};
+
 const Login: React.FC<Props> = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -31,7 +42,7 @@ const Login: React.FC<Props> = ({ navigation }) => {
   const { handleLogin } = useAuth();
 
   const onSubmit = async () => {
-    if (!email || !password) {
+    if (!email.trim() || !password) {
       Toast.show({
         type: "error",
         text1: "Thiếu thông tin",
@@ -39,7 +50,6 @@ const Login: React.FC<Props> = ({ navigation }) => {
       });
       return;
     }
-
     try {
       setIsLoading(true);
       await handleLogin(email.trim(), password);
@@ -47,7 +57,7 @@ const Login: React.FC<Props> = ({ navigation }) => {
         type: "success",
         text1: "Đăng nhập thành công!",
       });
-    } catch (err) {
+    } catch {
       Toast.show({
         type: "error",
         text1: "Đăng nhập thất bại",
@@ -59,29 +69,45 @@ const Login: React.FC<Props> = ({ navigation }) => {
   };
 
   return (
-    <LinearGradient colors={["#f0fdf4", "#ffffff"]} style={styles.container}>
+    <LinearGradient
+      colors={[COLORS.white, COLORS.greenLight]}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 0, y: 1 }}
+      style={styles.container}
+    >
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
+        style={styles.flex}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <ScrollView
-          contentContainerStyle={styles.scroll}
+          contentContainerStyle={styles.scrollContainer}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          {/* Back button */}
+          {/* Back Button */}
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.navigate("AuthIntroScreen")}
+            activeOpacity={0.7}
           >
-            <Ionicons name="chevron-back" size={28} color="#14532d" />
+            <Ionicons
+              name="chevron-back"
+              size={28}
+              color={COLORS.primaryGreen}
+              style={{
+                textShadowColor: COLORS.textShadow,
+                textShadowRadius: 3,
+              }}
+            />
           </TouchableOpacity>
 
-          {/* Logo + Tiêu đề */}
-          <View style={styles.logoContainer}>
+          {/* Logo & Titles */}
+          <View style={styles.logoSection}>
             <Animatable.View
               animation="zoomIn"
               delay={200}
               style={styles.logoWrapper}
+              easing="ease-out"
             >
               <Image source={logo} style={styles.logo} />
             </Animatable.View>
@@ -103,68 +129,84 @@ const Login: React.FC<Props> = ({ navigation }) => {
             </Animatable.Text>
           </View>
 
-          {/* Form đăng nhập */}
+          {/* Form */}
           <Animatable.View
             animation="fadeInUp"
             delay={800}
-            style={styles.inputContainer}
+            style={styles.formContainer}
           >
+            {/* Email */}
             <Text style={styles.label}>Email</Text>
             <TextInput
               style={styles.input}
               placeholder="Nhập email"
-              placeholderTextColor="#999"
+              placeholderTextColor={COLORS.grayMedium}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
+              autoCorrect={false}
+              textContentType="emailAddress"
             />
 
-            <View style={{ marginBottom: 14 }}>
-              <Text style={styles.label}>Mật khẩu</Text>
-              <View style={styles.inputWrapper}>
-                <TextInput
-                  style={[styles.input, { paddingRight: 40 }]}
-                  placeholder="Nhập mật khẩu"
-                  placeholderTextColor="#999"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
+            {/* Password */}
+            <Text style={styles.label}>Mật khẩu</Text>
+            <View style={styles.passwordWrapper}>
+              <TextInput
+                style={[styles.input, { paddingRight: 40 }]}
+                placeholder="Nhập mật khẩu"
+                placeholderTextColor={COLORS.grayMedium}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                autoCorrect={false}
+                textContentType="password"
+              />
+              <TouchableOpacity
+                style={styles.eyeIcon}
+                onPress={() => setShowPassword(!showPassword)}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name={showPassword ? "eye" : "eye-off"}
+                  size={22}
+                  color={COLORS.primaryGreen}
                 />
-                <TouchableOpacity
-                  style={styles.eyeIcon}
-                  onPress={() => setShowPassword(!showPassword)}
-                >
-                  <Ionicons
-                    name={showPassword ? "eye" : "eye-off"}
-                    size={20}
-                    color="#999"
-                  />
-                </TouchableOpacity>
-              </View>
+              </TouchableOpacity>
             </View>
 
+            {/* Login Button */}
             <TouchableOpacity
-              style={styles.loginButton}
+              style={[
+                styles.loginButton,
+                isLoading && styles.loginButtonDisabled,
+              ]}
               onPress={onSubmit}
               disabled={isLoading}
+              activeOpacity={0.85}
             >
               {isLoading ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator size="small" color={COLORS.white} />
               ) : (
-                <Text style={styles.loginText}>Đăng nhập</Text>
+                <Text style={styles.loginButtonText}>Đăng nhập</Text>
               )}
             </TouchableOpacity>
 
+            {/* Forgot password */}
             <TouchableOpacity
               onPress={() => navigation.navigate("ForgotPassword")}
+              activeOpacity={0.7}
             >
-              <Text style={styles.forgotPassword}>Quên mật khẩu?</Text>
+              <Text style={styles.forgotPasswordText}>Quên mật khẩu?</Text>
             </TouchableOpacity>
 
+            {/* Register */}
             <View style={styles.registerContainer}>
               <Text style={styles.registerText}>Chưa có tài khoản?</Text>
-              <TouchableOpacity onPress={() => navigation.navigate("Register")}>
+              <TouchableOpacity
+                onPress={() => navigation.navigate("Register")}
+                activeOpacity={0.7}
+              >
                 <Text style={styles.registerLink}> Đăng ký ngay</Text>
               </TouchableOpacity>
             </View>
@@ -178,132 +220,152 @@ const Login: React.FC<Props> = ({ navigation }) => {
 export default Login;
 
 const styles = StyleSheet.create({
+  flex: { flex: 1 },
   container: {
     flex: 1,
-    backgroundColor: "#f0fdf4",
+    backgroundColor: COLORS.white,
   },
-  scroll: {
-    padding: 24,
+  scrollContainer: {
     flexGrow: 1,
+    paddingHorizontal: 28,
     justifyContent: "center",
+    paddingVertical: 48,
   },
   backButton: {
     position: "absolute",
-    top: 50,
+    top: 48,
     left: 20,
     zIndex: 10,
+    backgroundColor: "rgba(102,187,106,0.15)",
+    padding: 8,
+    borderRadius: 30,
+    shadowColor: COLORS.primaryGreen,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.18,
+    shadowRadius: 6,
+    elevation: 5,
   },
-  logoContainer: {
+  logoSection: {
     alignItems: "center",
-    marginBottom: 30,
-    marginTop: 50,
+    marginBottom: 40,
   },
   logoWrapper: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: "#fff",
+    width: 110,
+    height: 110,
+    borderRadius: 55,
+    backgroundColor: COLORS.white,
     justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 6,
-    marginBottom: 16,
+    shadowColor: COLORS.primaryGreen,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.22,
+    shadowRadius: 15,
+    elevation: 9,
+    marginBottom: 18,
   },
   logo: {
-    width: 70,
-    height: 70,
+    width: 85,
+    height: 85,
+    borderRadius: 42.5,
     resizeMode: "contain",
-    borderRadius: 35,
   },
   title: {
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: "700",
-    color: "#14532d",
+    color: COLORS.primaryGreen,
+    textShadowColor: COLORS.textShadow,
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 5,
   },
   subtitle: {
-    textAlign: "center",
-    color: "#374151",
+    fontSize: 16,
+    color: COLORS.grayDark,
     marginTop: 8,
-    fontSize: 15,
-    paddingHorizontal: 20,
+    textAlign: "center",
     fontWeight: "500",
+    lineHeight: 22,
+    paddingHorizontal: 20,
   },
-  inputContainer: {
-    backgroundColor: "#ffffff",
-    padding: 24,
-    borderRadius: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 5,
+  formContainer: {
+    backgroundColor: COLORS.grayLight,
+    borderRadius: 18,
+    paddingVertical: 28,
+    paddingHorizontal: 26,
+    shadowColor: COLORS.primaryGreen,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
   },
   label: {
     fontWeight: "600",
-    color: "#14532d",
     fontSize: 14,
-    marginBottom: 6,
+    color: COLORS.primaryGreen,
+    marginBottom: 10,
   },
   input: {
+    backgroundColor: COLORS.white,
+    borderRadius: 14,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: COLORS.grayDark,
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    marginBottom: 16,
-    fontSize: 15,
-    color: "#000",
-    backgroundColor: "#f9fafb",
+    borderColor: COLORS.grayMedium,
+    marginBottom: 22,
+    shadowColor: COLORS.primaryGreen,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.12,
+    shadowRadius: 4,
+    elevation: 2,
   },
-
-  inputWrapper: {
+  passwordWrapper: {
     position: "relative",
   },
   eyeIcon: {
     position: "absolute",
-    right: 12,
-    top: 10,
+    right: 18,
+    top: 16,
   },
-
   loginButton: {
-    backgroundColor: "#22c55e",
-    paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: 18,
+    paddingVertical: 16,
     alignItems: "center",
-    marginTop: 8,
-    marginBottom: 12,
-    shadowColor: "#15803d",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 5,
-    elevation: 4,
+    marginBottom: 22,
+    backgroundColor: COLORS.primaryGreen,
+    shadowColor: COLORS.primaryGreen,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 14,
+    elevation: 9,
   },
-  loginText: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 16,
+  loginButtonDisabled: {
+    backgroundColor: COLORS.greenLight,
   },
-  forgotPassword: {
+  loginButtonText: {
+    color: COLORS.white,
+    fontWeight: "700",
+    fontSize: 18,
+    letterSpacing: 0.4,
+  },
+  forgotPasswordText: {
+    color: COLORS.primaryGreen,
+    fontSize: 15,
     textAlign: "center",
-    color: "#15803d",
-    fontSize: 14,
-    marginTop: 6,
+    marginBottom: 26,
+    fontWeight: "600",
   },
   registerContainer: {
     flexDirection: "row",
     justifyContent: "center",
-    marginTop: 20,
   },
   registerText: {
-    color: "#4b5563",
+    color: "#707070",
     fontSize: 14,
   },
   registerLink: {
-    color: "#15803d",
+    color: COLORS.primaryGreen,
+    fontWeight: "700",
     fontSize: 14,
-    fontWeight: "bold",
   },
 });

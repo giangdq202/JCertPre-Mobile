@@ -15,20 +15,31 @@
       "**/*"
     ],
     "updates": {
+      "enabled": false,
+      "checkAutomatically": "ON_LOAD",
       "fallbackToCacheTimeout": 0
     },
+    "runtimeVersion": "1.0.0",
+    "jsEngine": "hermes",
     "ios": {
       "supportsTablet": true
     },
     "android": {
+      "edgeToEdgeEnabled": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "package": "com.duongtoan.JCertPreMobile"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "86dadfc6-bed2-4f15-a5cd-8a912cab0a96"
+      }
+    },
+    "owner": "duongtoan"
   }
 }

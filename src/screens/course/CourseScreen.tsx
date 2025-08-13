@@ -12,6 +12,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { ImageBackground } from "react-native";
 import backgroundImage from "../../assets/courses.jpg";
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+import { useNavigation } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { AppStackParamList } from "../../navigation/types";
 
 const courseImages = [
   require("../../assets/course1.png"),
@@ -42,7 +45,7 @@ const allCourses: Course[] = [
     level: 0,
     courseType: 0,
     price: 1500000,
-    thumbnailUrl: courseImages[0],
+    thumbnailUrl: courseImages[4],
   },
   {
     id: "2",
@@ -52,7 +55,7 @@ const allCourses: Course[] = [
     level: 1,
     courseType: 0,
     price: 1700000,
-    thumbnailUrl: courseImages[1],
+    thumbnailUrl: courseImages[3],
   },
   {
     id: "3",
@@ -72,7 +75,7 @@ const allCourses: Course[] = [
     level: 3,
     courseType: 0,
     price: 2000000,
-    thumbnailUrl: courseImages[3],
+    thumbnailUrl: courseImages[1],
   },
   {
     id: "5",
@@ -82,7 +85,7 @@ const allCourses: Course[] = [
     level: 4,
     courseType: 0,
     price: 2500000,
-    thumbnailUrl: courseImages[4],
+    thumbnailUrl: courseImages[0],
   },
 ];
 
@@ -97,6 +100,8 @@ export default function CourseScreen() {
     const matchLevel = selectedLevel === null || course.level === selectedLevel;
     return matchSearch && matchLevel;
   });
+
+  const navigation = useNavigation<StackNavigationProp<AppStackParamList>>();
 
   return (
     <ImageBackground
@@ -153,7 +158,11 @@ export default function CourseScreen() {
           keyboardShouldPersistTaps="handled"
         >
           {filteredCourses.map((course) => (
-            <View key={course.id} style={styles.card}>
+            <TouchableOpacity
+              key={course.id}
+              style={styles.card}
+              onPress={() => navigation.navigate("CourseDetail", { course })}
+            >
               <Image
                 source={course.thumbnailUrl}
                 style={styles.image}
@@ -168,7 +177,7 @@ export default function CourseScreen() {
                   {course.price.toLocaleString("vi-VN")} VND
                 </Text>
               </View>
-            </View>
+            </TouchableOpacity>
           ))}
         </ScrollView>
       </View>
@@ -190,7 +199,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     marginHorizontal: 16,
-    marginTop: 40,
+    marginTop: 25,
     marginBottom: 12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
