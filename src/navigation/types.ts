@@ -22,10 +22,11 @@ export type AppStackParamList = {
   FlashcardDetail: undefined;
   TestDetail: { id: string };
   CourseDetail: { course: Course };
-  Checkout: { coursePrice: number; courseId: string }; // Checkout screen
+  Checkout: { coursePrice: number; courseId: string };
   ProfileDetail: undefined;
   TransactionHistory: undefined;
-  Credit: undefined; // Credit screen
+  Credit: undefined;
+  MyCourse: undefined;
 };
 
 // ================== Course ==================
@@ -42,21 +43,25 @@ export type Course = {
 
 // ================== Payment & Credit ==================
 
-// Lịch sử thanh toán của student
+// Lịch sử thanh toán
 export type PaymentHistoryItem = {
-  id: string;
+  paymentId: string; // đổi từ id -> paymentId để khớp API
   amount: number;
-  date: string;
-  method: string;
-  status: string;
+  paymentType: "Money" | "Credit";
+  description?: string;
+  status: "Completed" | "Failed" | "Pending";
+  createdAt: string;
+  transactionId?: string;
 };
 
 // Lịch sử giao dịch Credit
 export type CreditTransactionItem = {
-  id: string;
+  transactionId: string; // đổi từ id -> transactionId
   amount: number;
   type: "topup" | "spend";
-  date: string;
+  description?: string;
+  balanceAfter: number;
+  createdAt: string;
 };
 
 // Kết quả kiểm tra credit trước khi mua khóa học

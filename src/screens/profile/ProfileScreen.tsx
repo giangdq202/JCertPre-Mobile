@@ -1,4 +1,3 @@
-// src/screens/profile/ProfileScreen.tsx
 import React from "react";
 import {
   View,
@@ -31,6 +30,7 @@ const ProfileScreen = () => {
 
   return (
     <ScrollView style={styles.container}>
+      {/* Header */}
       <LinearGradient
         colors={["#d1fae5", "#32CD32"]}
         style={styles.header}
@@ -46,7 +46,44 @@ const ProfileScreen = () => {
         </Text>
       </LinearGradient>
 
+      {/* Danh sách chức năng */}
       <View style={styles.cardsContainer}>
+        {/* Hồ sơ của tôi */}
+        <TouchableOpacity
+          style={styles.card}
+          onPress={() => navigation.navigate("ProfileDetail")}
+        >
+          <Feather name="user" size={28} color="#4F46E5" />
+          <View style={{ marginLeft: 12 }}>
+            <Text style={styles.cardLabel}>Hồ sơ của tôi</Text>
+            <Text style={styles.cardValue}>Xem và chỉnh sửa thông tin</Text>
+          </View>
+          <Feather
+            name="chevron-right"
+            size={24}
+            color="#4F46E5"
+            style={{ marginLeft: "auto" }}
+          />
+        </TouchableOpacity>
+
+        {/* Khóa học của tôi */}
+        <TouchableOpacity
+          style={styles.card}
+          onPress={() => navigation.navigate("MyCourse")}
+        >
+          <Feather name="book-open" size={28} color="#F59E0B" />
+          <View style={{ marginLeft: 12 }}>
+            <Text style={styles.cardLabel}>Khóa học của tôi</Text>
+            <Text style={styles.cardValue}>Danh sách khóa học đã đăng ký</Text>
+          </View>
+          <Feather
+            name="chevron-right"
+            size={24}
+            color="#F59E0B"
+            style={{ marginLeft: "auto" }}
+          />
+        </TouchableOpacity>
+
         {/* Credit Card */}
         <TouchableOpacity
           style={styles.card}

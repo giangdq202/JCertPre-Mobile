@@ -15,7 +15,7 @@ import { useAuth } from "../../auth/AuthContext";
 import * as ImagePicker from "expo-image-picker";
 import { updateUser, updateUserAvatar } from "../../services/userService";
 
-const primaryColor = "#32CD32"; // Màu chủ đạo đồng bộ
+const primaryColor = "#32CD32";
 
 const ProfileDetail = () => {
   const navigation = useNavigation();
@@ -76,15 +76,6 @@ const ProfileDetail = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back-outline" size={24} color={primaryColor} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Thông tin cá nhân</Text>
-        <View style={{ width: 24 }} />
-      </View>
-
       {/* Avatar */}
       <TouchableOpacity
         onPress={handlePickImage}

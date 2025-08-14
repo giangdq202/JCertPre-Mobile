@@ -17,6 +17,7 @@ import CourseDetailScreen from "../screens/course/CourseDetailScreen";
 import ProfileDetailScreen from "../screens/profile/ProfileDetailScreen";
 import PaymentHistoryScreen from "../screens/profile/PaymentHistoryScreen";
 import CreditScreen from "../screens/profile/CreditScreen";
+import MyCourseScreen from "../screens/profile/MyCourseScreen";
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
 
@@ -52,6 +53,11 @@ const AppStack = () => {
         name="Credit"
         component={CreditScreen}
         options={{ headerShown: true, title: "Số dư & Lịch sử Credit" }}
+      />
+      <Stack.Screen
+        name="MyCourse"
+        component={MyCourseScreen}
+        options={{ headerShown: true, title: "Khóa học của tôi" }}
       />
     </Stack.Navigator>
   );
