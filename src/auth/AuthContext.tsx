@@ -34,6 +34,7 @@ interface AuthContextType {
   isLoading: boolean;
   handleLogin: (email: string, password: string) => Promise<void>;
   handleLogout: () => Promise<void>;
+  setUserInfo: React.Dispatch<React.SetStateAction<UserInfoResponse | null>>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -177,6 +178,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         isLoading,
         handleLogin,
         handleLogout,
+        setUserInfo,
       }}
     >
       {children}

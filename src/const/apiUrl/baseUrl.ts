@@ -1,4 +1,5 @@
-export const BASE_URL = "https://be.zd-dev.xyz/api";
+// export const BASE_URL = "https://be.zd-dev.xyz/api";
+export const BASE_URL = "http://localhost:5001/api";
 
 // ======================= AUTH =======================
 export const AUTH_BASE_URL = `${BASE_URL}/auth`;
