@@ -46,7 +46,7 @@ const categories = [
     color: "#FFB74D",
   },
   { id: "3", title: "Kanji", icon: "translate", color: "#E57373" },
-  { id: "4", title: "Luyện thi", icon: "medal-outline", color: "#C0CA33" },
+  { id: "4", title: "Quiz", icon: "brain", color: "#C0CA33" },
 ];
 
 export default function HomeScreen() {
@@ -81,9 +81,13 @@ export default function HomeScreen() {
     <TouchableOpacity
       key={item.id}
       style={[styles.categoryItem, { borderColor: item.color }]}
-      onPress={() =>
-        item.title === "Flashcard" && navigation.navigate("Flashcard")
-      }
+      onPress={() => {
+        if (item.title === "Flashcard") {
+          navigation.navigate("Flashcard");
+        } else if (item.title === "Quiz") {
+          navigation.navigate("QuizSetup");
+        }
+      }}
       activeOpacity={0.7}
     >
       <MaterialCommunityIcons

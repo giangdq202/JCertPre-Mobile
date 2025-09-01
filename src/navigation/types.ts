@@ -28,6 +28,10 @@ export type AppStackParamList = {
   Credit: undefined;
   MyCourse: undefined;
   LearnCourse: { courseId: string };
+  // Quiz screens
+  QuizSetup: undefined;
+  Quiz: undefined;
+  QuizResults: undefined;
 };
 
 // ================== Course ==================

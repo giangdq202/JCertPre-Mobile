@@ -20,6 +20,11 @@ import PaymentHistoryScreen from "../screens/profile/PaymentHistoryScreen";
 import CreditScreen from "../screens/profile/CreditScreen";
 import MyCourseScreen from "../screens/profile/MyCourseScreen";
 
+// Quiz
+import QuizSetupScreen from "../screens/QuizSetupScreen";
+import QuizScreen from "../screens/QuizScreen";
+import QuizResultsScreen from "../screens/QuizResultsScreen";
+
 const Stack = createNativeStackNavigator<AppStackParamList>();
 
 const AppStack = () => {
@@ -60,6 +65,23 @@ const AppStack = () => {
         name="MyCourse"
         component={MyCourseScreen}
         options={{ headerShown: false, title: "Khóa học của tôi" }}
+      />
+
+      {/* Quiz */}
+      <Stack.Screen
+        name="QuizSetup"
+        component={QuizSetupScreen}
+        options={{ headerShown: false, title: "Quiz Setup" }}
+      />
+      <Stack.Screen
+        name="Quiz"
+        component={QuizScreen}
+        options={{ headerShown: false, title: "Quiz" }}
+      />
+      <Stack.Screen
+        name="QuizResults"
+        component={QuizResultsScreen}
+        options={{ headerShown: false, title: "Quiz Results" }}
       />
     </Stack.Navigator>
   );

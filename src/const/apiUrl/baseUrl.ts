@@ -71,9 +71,11 @@ export const TEST_QUESTION_BASE_URL = `${BASE_URL}/test-questions`;
 export const GET_QUESTIONS_FROM_TEST_URL = (testId: string) =>
   `${TEST_QUESTION_BASE_URL}/${testId}/questions`;
 
-// ======================= QUESTIONS & CHOICES =======================
+// ======================= QUESTIONS & QUIZ =======================
 export const QUESTION_BASE_URL = `${BASE_URL}/questions`;
-export const CHOICE_BASE_URL = `${BASE_URL}/choices`;
+export const GET_RANDOM_QUESTIONS_URL = `${QUESTION_BASE_URL}/random`;
+export const SUB_CONTENTS_BASE_URL = `${BASE_URL}/sub-contents`;
+export const GET_SUB_CONTENTS_URL = SUB_CONTENTS_BASE_URL;
 
 // ======================= TEST ATTEMPTS =======================
 export const TEST_ATTEMPT_BASE_URL = `${BASE_URL}/test-attempts`;
