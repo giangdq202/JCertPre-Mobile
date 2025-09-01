@@ -22,7 +22,9 @@ const QuizScreen: React.FC = () => {
   const { 
     session,
     answerQuestion,
+    saveUserAnswer,
     nextQuestion,
+    previousQuestion,
     finishQuiz 
   } = useQuiz();
   
@@ -30,6 +32,7 @@ const QuizScreen: React.FC = () => {
   const [showExplanation, setShowExplanation] = useState(false);
   const [timeLeft, setTimeLeft] = useState(30);
   const [animationValue] = useState(new Animated.Value(0));
+  const [userAnswers, setUserAnswers] = useState<{ [key: number]: string }>({});
 
   const handleNext = React.useCallback(() => {
     animationValue.setValue(0);
@@ -43,6 +46,14 @@ const QuizScreen: React.FC = () => {
     }
   }, [session, animationValue, nextQuestion, finishQuiz, navigation]);
 
+  const handlePrevious = () => {
+    if (session && session.currentQuestionIndex > 0) {
+      previousQuestion();
+    } else {
+      Alert.alert('Thông báo', 'Đây là câu hỏi đầu tiên.');
+    }
+  };
+
   useEffect(() => {
     if (!session) {
       navigation.goBack();
@@ -51,10 +62,15 @@ const QuizScreen: React.FC = () => {
   }, [session, navigation]);
 
   useEffect(() => {
-    // Reset timer and selection when question changes
+    if (!session) return;
+    
+    // Restore previous answer if exists
+    const currentAnswer = session.userAnswers[session.currentQuestionIndex] || userAnswers[session.currentQuestionIndex];
+    
+    // Reset or restore states
     setTimeLeft(30);
-    setSelectedChoice(null);
-    setShowExplanation(false);
+    setSelectedChoice(currentAnswer || null);
+    setShowExplanation(!!currentAnswer);
 
     // Animate question entrance
     Animated.spring(animationValue, {
@@ -64,37 +80,45 @@ const QuizScreen: React.FC = () => {
       friction: 8,
     }).start();
 
-    // Timer for current question
-    const timer = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          // Move to next question when time runs out
-          handleNext();
-          return 30;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    // Timer for current question (only if no answer selected)
+    if (!currentAnswer) {
+      const timer = setInterval(() => {
+        setTimeLeft(prev => {
+          if (prev <= 1) {
+            // Move to next question when time runs out
+            handleNext();
+            return 30;
+          }
+          return prev - 1;
+        });
+      }, 1000);
 
-    return () => clearInterval(timer);
-  }, [session?.currentQuestionIndex, handleNext]);
+      return () => clearInterval(timer);
+    }
+  }, [session?.currentQuestionIndex, session?.userAnswers, userAnswers, handleNext]);
 
   const handleChoiceSelect = (choiceId: string) => {
-    if (selectedChoice) return; // Prevent changing answer
-    
+    // Allow changing answer (remove the prevention)
     setSelectedChoice(choiceId);
+    
+    // Save to local state for navigation
+    const newUserAnswers = { ...userAnswers };
+    newUserAnswers[session!.currentQuestionIndex] = choiceId;
+    setUserAnswers(newUserAnswers);
+    
+    // Save to context for persistence
+    saveUserAnswer(session!.currentQuestionIndex, choiceId);
+    
+    // Update context
     answerQuestion(choiceId);
     setShowExplanation(true);
     
-    // Auto-advance after 2 seconds
-    setTimeout(() => {
-      handleNext();
-    }, 2000);
-  };
-
-  const handlePrevious = () => {
-    // Navigation to previous question (if needed)
-    Alert.alert('Thông báo', 'Không thể quay lại câu hỏi trước đó.');
+    // Auto-advance after 2 seconds (only for new selections)
+    if (!selectedChoice) {
+      setTimeout(() => {
+        handleNext();
+      }, 2000);
+    }
   };
 
   if (!session) {
@@ -203,10 +227,9 @@ const QuizScreen: React.FC = () => {
                 <TouchableOpacity
                   key={choice.choiceId}
                   onPress={() => handleChoiceSelect(choice.choiceId)}
-                  disabled={selectedChoice !== null}
                   className={`p-4 rounded-2xl border-2 ${getChoiceColor(choice.choiceId)} ${
                     selectedChoice === choice.choiceId ? 'border-green-400' : 'border-gray-200'
-                  } ${selectedChoice !== null ? 'opacity-75' : ''}`}
+                  }`}
                 >
                   <View className="flex-row items-center">
                     <View className={`w-8 h-8 rounded-full mr-3 items-center justify-center ${
@@ -274,6 +297,13 @@ const QuizScreen: React.FC = () => {
                 }
               </Text>
             </TouchableOpacity>
+          </View>
+          
+          {/* Manual Navigation Info */}
+          <View className="mt-3 bg-white/10 rounded-xl p-3">
+            <Text className="text-white text-center text-sm">
+              <Text>💡</Text> Tip: Bạn có thể quay lại câu trước để xem lại hoặc thay đổi đáp án
+            </Text>
           </View>
         </View>
       </LinearGradient>

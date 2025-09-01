@@ -95,6 +95,7 @@ export interface QuizSession {
   questions: RandomQuestionWithChoicesDto[];
   currentQuestionIndex: number;
   answers: { [key: number]: string };
+  userAnswers: { [key: number]: string }; // Track individual answers for navigation
   startTime: Date;
   endTime?: Date;
   score: number;

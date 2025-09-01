@@ -14,6 +14,7 @@ interface QuizContextType {
   session: QuizSession | null;
   startQuiz: (request: GetRandomQuestionsRequestDto) => Promise<void>;
   answerQuestion: (choiceId: string) => void;
+  saveUserAnswer: (questionIndex: number, choiceId: string) => void;
   nextQuestion: () => void;
   previousQuestion: () => void;
   finishQuiz: () => QuizResult | null;
@@ -26,6 +27,7 @@ type QuizAction =
   | { type: 'SET_ERROR'; payload: string }
   | { type: 'START_QUIZ'; payload: QuizSession }
   | { type: 'ANSWER_QUESTION'; payload: { choiceId: string; timeSpent: number } }
+  | { type: 'SAVE_USER_ANSWER'; payload: { questionIndex: number; choiceId: string } }
   | { type: 'NEXT_QUESTION' }
   | { type: 'PREVIOUS_QUESTION' }
   | { type: 'FINISH_QUIZ' }
@@ -94,6 +96,20 @@ function quizReducer(state: typeof initialState, action: QuizAction) {
         },
       };
 
+    case 'SAVE_USER_ANSWER':
+      if (!state.session) return state;
+      
+      return {
+        ...state,
+        session: {
+          ...state.session,
+          userAnswers: {
+            ...state.session.userAnswers,
+            [action.payload.questionIndex]: action.payload.choiceId
+          }
+        }
+      };
+
     case 'NEXT_QUESTION':
       if (!state.session || state.session.currentQuestionIndex >= state.session.questions.length - 1) {
         return state;
@@ -151,6 +167,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children }) => {
         questions,
         currentQuestionIndex: 0,
         answers: {},
+        userAnswers: {}, // Initialize empty userAnswers
         startTime: new Date(),
         score: 0,
         totalPoints: questions.length, // Each question is 1 point
@@ -169,6 +186,10 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children }) => {
 
     const timeSpent = 30; // Calculate actual time spent in real implementation
     dispatch({ type: 'ANSWER_QUESTION', payload: { choiceId, timeSpent } });
+  };
+
+  const saveUserAnswer = (questionIndex: number, choiceId: string) => {
+    dispatch({ type: 'SAVE_USER_ANSWER', payload: { questionIndex, choiceId } });
   };
 
   const nextQuestion = () => {
@@ -211,6 +232,7 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children }) => {
     session: state.session,
     startQuiz,
     answerQuestion,
+    saveUserAnswer,
     nextQuestion,
     previousQuestion,
     finishQuiz,
