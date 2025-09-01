@@ -6,8 +6,13 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  Modal,
+  Pressable,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
+
+import colors from "../../styles/colors";
 import { useAuth } from "../../auth/AuthContext";
 import {
   getStudentCreditHistory,
@@ -17,11 +22,11 @@ import {
   CreditTransactionItem,
   PaymentHistoryItem,
 } from "../../navigation/types";
-import { Ionicons } from "@expo/vector-icons";
 
 const PaymentHistoryScreen = () => {
-  const { userInfo } = useAuth();
   const navigation = useNavigation();
+  const { userInfo } = useAuth();
+
   const [creditTransactions, setCreditTransactions] = useState<
     CreditTransactionItem[]
   >([]);
@@ -31,11 +36,12 @@ const PaymentHistoryScreen = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<"credit" | "payment">("credit");
+  const [selectedTransaction, setSelectedTransaction] = useState<
+    CreditTransactionItem | PaymentHistoryItem | null
+  >(null);
 
   useEffect(() => {
-    if (userInfo?.id) {
-      fetchHistory();
-    }
+    if (userInfo?.id) fetchHistory();
   }, [userInfo?.id]);
 
   const fetchHistory = async () => {
@@ -73,25 +79,93 @@ const PaymentHistoryScreen = () => {
     amount > 0 ? "Nạp tiền" : "Chi tiêu";
 
   const getTransactionColor = (amount: number) =>
-    amount > 0 ? "#16a34a" : "#dc2626";
+    amount > 0 ? colors.success : colors.danger;
 
   if (isLoading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" color="#10b981" />
-        <Text style={{ marginTop: 8, color: "#64748b" }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={{ marginTop: 8, color: colors.gray }}>
           Đang tải lịch sử giao dịch...
         </Text>
       </View>
     );
   }
 
+  const renderTransactionDetails = () => {
+    if (!selectedTransaction) return null;
+
+    return (
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={!!selectedTransaction}
+        onRequestClose={() => setSelectedTransaction(null)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Chi tiết giao dịch</Text>
+
+            {"transactionId" in selectedTransaction && (
+              <>
+                {/* <Text>ID: {selectedTransaction.transactionId}</Text> */}
+                <Text>Mô tả: {selectedTransaction.description}</Text>
+                <Text>
+                  Số tiền: {formatAmount(selectedTransaction.amount)}{" "}
+                  {activeTab === "credit" ? "credit" : "VND"}
+                </Text>
+                {"balanceAfter" in selectedTransaction && (
+                  <Text>
+                    Số dư sau giao dịch:{" "}
+                    {formatAmount(selectedTransaction.balanceAfter)} credit
+                  </Text>
+                )}
+                <Text>
+                  Ngày giao dịch: {formatDate(selectedTransaction.createdAt)}
+                </Text>
+              </>
+            )}
+
+            {"paymentId" in selectedTransaction && (
+              <>
+                <Text>
+                  Loại:{" "}
+                  {selectedTransaction.paymentType === "Money"
+                    ? "Tiền mặt"
+                    : "Credit"}
+                </Text>
+              </>
+            )}
+
+            <Pressable
+              style={styles.modalCloseBtn}
+              onPress={() => setSelectedTransaction(null)}
+            >
+              <Text style={{ color: "white" }}>Đóng</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+    );
+  };
+
   return (
     <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.backBtn}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="arrow-back" size={22} color={colors.darkGray} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Lịch sử giao dịch</Text>
+      </View>
+
       {/* Credit Balance */}
       <View style={styles.balanceCard}>
         <View style={{ flexDirection: "row", alignItems: "center" }}>
-          <Ionicons name="card-outline" size={22} color="#16a34a" />
+          <Ionicons name="card-outline" size={20} color={colors.primary} />
           <Text style={styles.balanceLabel}>Credit hiện tại:</Text>
         </View>
         <Text style={styles.balanceValue}>{userInfo?.credit || 0} credit</Text>
@@ -113,7 +187,7 @@ const PaymentHistoryScreen = () => {
           <Ionicons
             name="card-outline"
             size={16}
-            color={activeTab === "credit" ? "#10b981" : "#6b7280"}
+            color={activeTab === "credit" ? colors.primary : colors.darkGray}
           />
           <Text
             style={[
@@ -124,6 +198,7 @@ const PaymentHistoryScreen = () => {
             Credit ({creditTransactions.length})
           </Text>
         </TouchableOpacity>
+
         <TouchableOpacity
           style={[
             styles.tabBtn,
@@ -134,7 +209,7 @@ const PaymentHistoryScreen = () => {
           <Ionicons
             name="cash-outline"
             size={16}
-            color={activeTab === "payment" ? "#10b981" : "#6b7280"}
+            color={activeTab === "payment" ? colors.primary : colors.darkGray}
           />
           <Text
             style={[
@@ -155,21 +230,27 @@ const PaymentHistoryScreen = () => {
               <Ionicons
                 name="card-outline"
                 size={40}
-                color="#9ca3af"
+                color={colors.gray}
                 style={{ marginBottom: 8 }}
               />
               <Text style={styles.emptyText}>Chưa có giao dịch credit nào</Text>
             </View>
           ) : (
             creditTransactions.map((transaction) => (
-              <View key={transaction.transactionId} style={styles.itemCard}>
+              <TouchableOpacity
+                key={transaction.transactionId}
+                style={styles.itemCard}
+                onPress={() => setSelectedTransaction(transaction)}
+              >
                 <View style={styles.itemLeft}>
                   <View
                     style={[
                       styles.iconBox,
                       {
                         backgroundColor:
-                          transaction.amount > 0 ? "#dcfce7" : "#fee2e2",
+                          transaction.amount > 0
+                            ? colors.background
+                            : colors.danger + "33",
                       },
                     ]}
                   >
@@ -179,14 +260,18 @@ const PaymentHistoryScreen = () => {
                       color={getTransactionColor(transaction.amount)}
                     />
                   </View>
-                  <View>
+                  <View style={{ flex: 1, marginRight: 8 }}>
                     <Text style={styles.itemTitle}>
                       {getTransactionType(transaction.amount)}
                     </Text>
-                    <Text style={styles.itemDesc}>
+                    <Text
+                      style={styles.itemDesc}
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                    >
                       {transaction.description}
                     </Text>
-                    <Text style={styles.itemDate}>
+                    <Text style={styles.itemDateHighlighted}>
                       {formatDate(transaction.createdAt)}
                     </Text>
                   </View>
@@ -205,7 +290,7 @@ const PaymentHistoryScreen = () => {
                     Số dư: {formatAmount(transaction.balanceAfter)} credit
                   </Text>
                 </View>
-              </View>
+              </TouchableOpacity>
             ))
           )
         ) : paymentHistory.length === 0 ? (
@@ -213,157 +298,127 @@ const PaymentHistoryScreen = () => {
             <Ionicons
               name="cash-outline"
               size={40}
-              color="#9ca3af"
+              color={colors.gray}
               style={{ marginBottom: 8 }}
             />
             <Text style={styles.emptyText}>Chưa có lịch sử thanh toán nào</Text>
           </View>
         ) : (
           paymentHistory.map((payment) => (
-            <View
+            <TouchableOpacity
               key={payment.paymentId}
-              style={[
-                styles.itemCard,
-                {
-                  backgroundColor: "#fff",
-                  borderRadius: 12,
-                  padding: 14,
-                  marginBottom: 12,
-                  flexDirection: "row",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.05,
-                  shadowRadius: 4,
-                  elevation: 2,
-                },
-              ]}
+              style={styles.itemCard}
+              onPress={() => setSelectedTransaction(payment)}
             >
-              {/* Left side */}
-              <View
-                style={{ flexDirection: "row", alignItems: "center", flex: 1 }}
-              >
-                {/* Icon */}
+              <View style={styles.itemLeft}>
                 <View
-                  style={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: 21,
-                    justifyContent: "center",
-                    alignItems: "center",
-                    marginRight: 12,
-                    backgroundColor:
-                      payment.status === "Completed"
-                        ? "#dcfce7"
-                        : payment.status === "Failed"
-                        ? "#fee2e2"
-                        : "#fef9c3",
-                  }}
+                  style={[
+                    styles.iconBox,
+                    {
+                      backgroundColor:
+                        payment.status === "Completed"
+                          ? colors.background
+                          : payment.status === "Failed"
+                          ? colors.danger + "33"
+                          : colors.warning + "33",
+                    },
+                  ]}
                 >
                   <Ionicons
                     name="cash-outline"
                     size={20}
                     color={
                       payment.status === "Completed"
-                        ? "#16a34a"
+                        ? colors.success
                         : payment.status === "Failed"
-                        ? "#dc2626"
-                        : "#ca8a04"
+                        ? colors.danger
+                        : colors.warning
                     }
                   />
                 </View>
-
-                {/* Text info */}
-                <View style={{ flex: 1 }}>
-                  <Text
-                    style={{ fontSize: 15, fontWeight: "600", color: "#111" }}
-                  >
+                <View style={{ flex: 1, marginRight: 8 }}>
+                  <Text style={styles.itemTitle} numberOfLines={1}>
                     {payment.description || "Thanh toán credit"}
                   </Text>
-                  <Text style={{ fontSize: 13, color: "#555" }}>
+                  <Text style={styles.itemDesc}>
                     Loại:{" "}
                     {payment.paymentType === "Money" ? "Tiền mặt" : "Credit"}
                   </Text>
-                  <Text style={{ fontSize: 12, color: "#888", marginTop: 2 }}>
+                  <Text style={styles.itemDateHighlighted}>
                     {formatDate(payment.createdAt)}
                   </Text>
                 </View>
               </View>
-
-              {/* Right side */}
-              <View style={{ alignItems: "flex-end" }}>
-                <Text
-                  style={{ fontSize: 16, fontWeight: "700", color: "#111" }}
-                >
+              <View style={styles.itemRight}>
+                <Text style={styles.itemAmount}>
                   {formatAmount(payment.amount)} VND
                 </Text>
                 {payment.transactionId && (
-                  <Text style={{ fontSize: 12, color: "#888" }}>
+                  <Text style={styles.itemBalance}>
                     ID: {payment.transactionId}
                   </Text>
                 )}
               </View>
-            </View>
+            </TouchableOpacity>
           ))
         )}
       </ScrollView>
+
+      {renderTransactionDetails()}
     </View>
   );
 };
 
+export default PaymentHistoryScreen;
+
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f9fafb", padding: 16 },
+  container: { flex: 1, backgroundColor: colors.background, padding: 16 },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  headerCard: {
-    backgroundColor: "#fff",
-    padding: 16,
-    borderRadius: 12,
+  header: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
-    elevation: 2,
+    marginBottom: 16,
+    paddingTop: 50,
   },
   backBtn: {
     marginRight: 12,
     padding: 6,
     borderRadius: 8,
-    backgroundColor: "#f3f4f6",
+    backgroundColor: colors.lightGray,
   },
-  headerTitle: { fontSize: 20, fontWeight: "bold", color: "#111827" },
-  headerSubtitle: { color: "#6b7280", fontSize: 14 },
+  headerTitle: { fontSize: 22, fontWeight: "bold", color: colors.darkGray },
   balanceCard: {
-    backgroundColor: "#ecfdf5",
+    backgroundColor: colors.cardBackground,
     borderWidth: 1,
-    borderColor: "#a7f3d0",
+    borderColor: colors.success,
     borderRadius: 12,
     padding: 12,
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 12,
+    marginBottom: 16,
     alignItems: "center",
   },
   balanceLabel: {
     fontSize: 16,
     marginLeft: 6,
     fontWeight: "500",
-    color: "#065f46",
+    color: colors.success,
   },
-  balanceValue: { fontSize: 20, fontWeight: "bold", color: "#064e3b" },
+  balanceValue: { fontSize: 20, fontWeight: "bold", color: colors.primary },
   errorBox: {
-    backgroundColor: "#fee2e2",
+    backgroundColor: colors.danger + "33",
     padding: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#fecaca",
+    borderColor: colors.danger,
     marginBottom: 12,
   },
-  errorText: { color: "#b91c1c", fontSize: 14 },
+  errorText: { color: colors.danger, fontSize: 14 },
   tabRow: {
     flexDirection: "row",
-    backgroundColor: "#fff",
+    backgroundColor: colors.cardBackground,
     borderRadius: 12,
-    marginBottom: 12,
+    marginBottom: 16,
     elevation: 2,
   },
   tabBtn: {
@@ -372,36 +427,59 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     alignItems: "center",
-    gap: 4,
   },
-  tabBtnActive: { borderBottomWidth: 2, borderBottomColor: "#10b981" },
-  tabText: { fontSize: 14, color: "#6b7280", marginLeft: 4 },
-  tabTextActive: { color: "#10b981", fontWeight: "600" },
+  tabBtnActive: { borderBottomWidth: 2, borderBottomColor: colors.primary },
+  tabText: { fontSize: 14, color: colors.darkGray, marginLeft: 4 },
+  tabTextActive: { color: colors.primary, fontWeight: "600" },
   emptyBox: { alignItems: "center", paddingVertical: 40 },
-  emptyText: { color: "#6b7280", fontSize: 14 },
+  emptyText: { color: colors.gray, fontSize: 14 },
   itemCard: {
     flexDirection: "row",
     justifyContent: "space-between",
-    backgroundColor: "#fff",
+    backgroundColor: colors.cardBackground,
     padding: 14,
     borderRadius: 12,
-    marginBottom: 10,
+    marginBottom: 12,
     elevation: 1,
   },
-  itemLeft: { flexDirection: "row", gap: 10, flex: 1 },
+  itemLeft: { flexDirection: "row", flex: 1 },
   iconBox: {
-    padding: 8,
-    borderRadius: 8,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 6,
+    marginRight: 10,
   },
-  itemTitle: { fontSize: 15, fontWeight: "600", color: "#111827" },
-  itemDesc: { fontSize: 13, color: "#6b7280" },
-  itemDate: { fontSize: 12, color: "#9ca3af", marginTop: 2 },
+  itemTitle: { fontSize: 15, fontWeight: "600", color: colors.darkGray },
+  itemDesc: { fontSize: 13, color: colors.gray },
+  itemDateHighlighted: { fontSize: 12, color: colors.primary, marginTop: 2 },
   itemRight: { alignItems: "flex-end" },
-  itemAmount: { fontSize: 14, fontWeight: "bold", color: "#111827" },
-  itemBalance: { fontSize: 12, color: "#6b7280", marginTop: 2 },
+  itemAmount: { fontSize: 14, fontWeight: "bold", color: colors.darkGray },
+  itemBalance: { fontSize: 12, color: colors.gray, marginTop: 2 },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContent: {
+    width: "85%",
+    backgroundColor: "white",
+    borderRadius: 12,
+    padding: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 12,
+    color: colors.darkGray,
+  },
+  modalCloseBtn: {
+    marginTop: 20,
+    backgroundColor: colors.primary,
+    padding: 12,
+    borderRadius: 10,
+    alignItems: "center",
+  },
 });
-
-export default PaymentHistoryScreen;

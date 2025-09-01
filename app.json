@@ -40,6 +40,10 @@
         "projectId": "86dadfc6-bed2-4f15-a5cd-8a912cab0a96"
       }
     },
-    "owner": "duongtoan"
+    "owner": "duongtoan",
+    "plugins": [
+      "expo-video",
+      "expo-audio"
+    ]
   }
 }

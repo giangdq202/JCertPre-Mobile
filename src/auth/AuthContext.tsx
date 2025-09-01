@@ -14,74 +14,80 @@ import { refreshToken } from "../services/tokenService";
 const STORAGE_KEYS = {
   ACCESS: "accessToken",
   REFRESH: "refreshToken",
+  USER: "userInfo",
 };
 
 interface UserInfoResponse {
   id: string;
   fullName: string;
   email: string;
-  phone: string | null;
+  phone?: string | null;
   avatarUrl?: string | null;
-  roleName: string;
   credit?: number;
+  roleName: string;
 }
 
 interface AuthContextType {
   isAuthenticated: boolean;
   jwtToken: string | null;
-  userInfo?: UserInfoResponse;
+  userInfo: UserInfoResponse | null;
   isLoading: boolean;
   handleLogin: (email: string, password: string) => Promise<void>;
   handleLogout: () => Promise<void>;
-  setUserInfo: (user: UserInfoResponse) => void;
-  setIsAuthenticated: (auth: boolean) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  // ================== State ==================
   const [jwtToken, setJwtToken] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userInfo, setUserInfo] = useState<UserInfoResponse>();
+  const [userInfo, setUserInfo] = useState<UserInfoResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // ================== Helpers ==================
-  const storeTokens = async (access: string, refresh: string) => {
-    try {
-      await AsyncStorage.multiSet([
-        [STORAGE_KEYS.ACCESS, access],
-        [STORAGE_KEYS.REFRESH, refresh],
-      ]);
-    } catch (err) {
-      console.error("Lỗi lưu token:", err);
-    }
+  // ===== Helpers =====
+  const storeSession = async (
+    access: string,
+    refresh: string,
+    user: UserInfoResponse
+  ) => {
+    await AsyncStorage.multiSet([
+      [STORAGE_KEYS.ACCESS, access],
+      [STORAGE_KEYS.REFRESH, refresh],
+      [STORAGE_KEYS.USER, JSON.stringify(user)],
+    ]);
   };
 
-  const clearTokens = async () => {
-    try {
-      await AsyncStorage.multiRemove([
-        STORAGE_KEYS.ACCESS,
-        STORAGE_KEYS.REFRESH,
-      ]);
-    } catch (err) {
-      console.error("Lỗi xóa token:", err);
-    }
+  const clearSession = async () => {
+    await AsyncStorage.multiRemove([
+      STORAGE_KEYS.ACCESS,
+      STORAGE_KEYS.REFRESH,
+      STORAGE_KEYS.USER,
+    ]);
   };
 
-  // ================== Actions ==================
+  // ===== Actions =====
   const handleRefreshToken = useCallback(
     async (accessToken: string, refresh: string) => {
       try {
         const response = await refreshToken(accessToken, refresh);
-        await storeTokens(response.accessToken, response.refreshToken);
+
+        if (response.user.roleName !== "STUDENT") {
+          throw new Error("Ứng dụng chỉ dành cho sinh viên");
+        }
+
+        await storeSession(
+          response.accessToken,
+          response.refreshToken,
+          response.user
+        );
 
         setJwtToken(response.accessToken);
         setUserInfo(response.user);
         setIsAuthenticated(true);
       } catch (err) {
-        console.error("Refresh token error:", err);
-        await clearTokens();
+        await clearSession();
+        setJwtToken(null);
+        setUserInfo(null);
         setIsAuthenticated(false);
 
         Toast.show({
@@ -97,7 +103,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const handleLogin = useCallback(async (email: string, password: string) => {
     try {
       const response = await login({ email, password });
-      await storeTokens(response.accessToken, response.refreshToken);
+
+      if (response.user.roleName !== "STUDENT") {
+        throw new Error("Ứng dụng chỉ dành cho sinh viên");
+      }
+
+      await storeSession(
+        response.accessToken,
+        response.refreshToken,
+        response.user
+      );
 
       setJwtToken(response.accessToken);
       setUserInfo(response.user);
@@ -120,42 +135,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const handleLogout = useCallback(async () => {
     try {
       await logout();
-    } catch (err) {
-      console.error("Logout error:", err);
-    } finally {
-      await clearTokens();
-      setJwtToken(null);
-      setUserInfo(undefined);
-      setIsAuthenticated(false);
+    } catch {}
+    await clearSession();
+    setJwtToken(null);
+    setUserInfo(null);
+    setIsAuthenticated(false);
 
-      Toast.show({
-        type: "info",
-        text1: "Đăng xuất thành công!",
-      });
-    }
+    Toast.show({
+      type: "info",
+      text1: "Đăng xuất thành công!",
+    });
   }, []);
 
+  // ===== Init =====
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        const [access, refresh] = await AsyncStorage.multiGet([
+        const [[, access], [, refresh]] = await AsyncStorage.multiGet([
           STORAGE_KEYS.ACCESS,
           STORAGE_KEYS.REFRESH,
-        ]).then((res) => res.map((item) => item[1]));
+        ]);
 
         if (access && refresh) {
           await handleRefreshToken(access, refresh);
-        } else {
-          setIsAuthenticated(false);
         }
-      } catch (err) {
-        console.error("Error initializing auth:", err);
+      } catch {
         setIsAuthenticated(false);
       } finally {
         setIsLoading(false);
       }
     };
-
     initializeAuth();
   }, [handleRefreshToken]);
 
@@ -168,8 +177,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         isLoading,
         handleLogin,
         handleLogout,
-        setUserInfo,
-        setIsAuthenticated,
       }}
     >
       {children}
@@ -177,10 +184,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-export const useAuth = (): AuthContextType => {
+export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
+  if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;
 };

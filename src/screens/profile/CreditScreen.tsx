@@ -9,12 +9,22 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
+  ImageBackground,
 } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { useAuth } from "../../auth/AuthContext";
 import { createStudentCreditPurchase } from "../../services/paymentService";
 import { CreateCreditPurchaseRequest } from "../../navigation/types";
+import { useNavigation } from "@react-navigation/native";
+import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { AppStackParamList } from "../../navigation/types";
+import colors from "../../styles/colors";
+
+type NavigationProp = NativeStackNavigationProp<AppStackParamList, "MainTabs">;
 
 const CreditScreen = () => {
+  const navigation = useNavigation<NavigationProp>();
   const { userInfo } = useAuth();
   const [creditAmount, setCreditAmount] = useState<number>(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -56,116 +66,151 @@ const CreditScreen = () => {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.header}>Nạp Credit</Text>
-      <Text style={styles.subHeader}>
-        Nạp credit để mua khóa học và tham gia kỳ thi
-      </Text>
+    <ImageBackground
+      source={require("../../assets/profile.jpg")}
+      style={styles.background}
+      resizeMode="cover"
+    >
+      {/* Header */}
+      <LinearGradient
+        colors={[colors.darkGray + "cc", colors.darkGray + "88"]}
+        style={styles.header}
+      >
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.backBtn}
+        >
+          <Ionicons name="arrow-back" size={22} color={colors.white} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Nạp Credit</Text>
+        <View style={{ width: 40 }} />
+      </LinearGradient>
 
-      {/* Credit hiện tại */}
-      <View style={styles.infoBox}>
-        <Text style={styles.infoLabel}>Credit hiện tại</Text>
-        <Text style={styles.infoValue}>{userInfo?.credit || 0} credit</Text>
-      </View>
+      <ScrollView contentContainerStyle={styles.container}>
+        {/* Thông tin Credit hiện tại */}
+        <View style={styles.infoBox}>
+          <Text style={styles.infoLabel}>Credit hiện tại</Text>
+          <Text style={styles.infoValue}>{userInfo?.credit || 0} credit</Text>
+        </View>
 
-      {/* Nhập số credit */}
-      <View style={styles.inputWrapper}>
-        <Text style={styles.inputLabel}>Số credit muốn nạp</Text>
-        <TextInput
-          style={styles.input}
-          keyboardType="numeric"
-          placeholder="Nhập số credit"
-          value={creditAmount ? creditAmount.toString() : ""}
-          onChangeText={(text) => setCreditAmount(parseInt(text) || 0)}
-        />
-        <Text style={styles.inputHint}>1 credit = 1 VND</Text>
-      </View>
+        {/* Nhập số credit */}
+        <View style={styles.inputWrapper}>
+          <Text style={styles.inputLabel}>Số credit muốn nạp</Text>
+          <TextInput
+            style={styles.input}
+            keyboardType="numeric"
+            placeholder="Nhập số credit"
+            placeholderTextColor={colors.gray}
+            value={creditAmount ? creditAmount.toString() : ""}
+            onChangeText={(text) => setCreditAmount(parseInt(text) || 0)}
+          />
+          <Text style={styles.inputHint}>1 credit = 1 VND</Text>
+        </View>
 
-      {/* Thanh toán */}
-      {creditAmount > 0 && (
-        <View style={styles.paymentBox}>
-          <Text style={styles.infoLabel}>Số tiền cần thanh toán</Text>
-          <Text style={styles.infoValue}>
-            {creditAmount.toLocaleString("vi-VN")} VND
+        {/* Thanh toán */}
+        {creditAmount > 0 && (
+          <View style={styles.paymentBox}>
+            <Text style={styles.infoLabel}>Số tiền cần thanh toán</Text>
+            <Text style={styles.infoValue}>
+              {creditAmount.toLocaleString("vi-VN")} VND
+            </Text>
+          </View>
+        )}
+
+        {/* Button Nạp Credit */}
+        <TouchableOpacity
+          style={[
+            styles.button,
+            (isLoading || creditAmount <= 0) && {
+              backgroundColor: colors.gray,
+            },
+          ]}
+          disabled={isLoading || creditAmount <= 0}
+          onPress={handlePurchase}
+        >
+          {isLoading ? (
+            <ActivityIndicator color={colors.white} />
+          ) : (
+            <Text style={styles.buttonText}>Nạp Credit</Text>
+          )}
+        </TouchableOpacity>
+
+        {/* Thông tin thanh toán */}
+        <View style={styles.infoSection}>
+          <Text style={styles.infoTitle}>Thông tin thanh toán</Text>
+          <Text style={styles.infoText}>
+            • Thanh toán qua PayOS (an toàn, bảo mật)
+          </Text>
+          <Text style={styles.infoText}>
+            • Hỗ trợ: ATM, Internet Banking, QR Code
+          </Text>
+          <Text style={styles.infoText}>
+            • Credit được cộng ngay sau khi thanh toán thành công
+          </Text>
+          <Text style={styles.infoText}>
+            • Vui lòng liên hệ hỗ trợ nếu gặp vấn đề
           </Text>
         </View>
-      )}
-
-      {/* Button */}
-      <TouchableOpacity
-        style={[
-          styles.button,
-          (isLoading || creditAmount <= 0) && { backgroundColor: "#A5B4FC" },
-        ]}
-        disabled={isLoading || creditAmount <= 0}
-        onPress={handlePurchase}
-      >
-        {isLoading ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={styles.buttonText}>Nạp Credit</Text>
-        )}
-      </TouchableOpacity>
-
-      {/* Thông tin thanh toán */}
-      <View style={styles.infoSection}>
-        <Text style={styles.infoTitle}>Thông tin thanh toán</Text>
-        <Text style={styles.infoText}>
-          • Thanh toán qua PayOS (an toàn, bảo mật)
-        </Text>
-        <Text style={styles.infoText}>
-          • Hỗ trợ: ATM, Internet Banking, QR Code
-        </Text>
-        <Text style={styles.infoText}>
-          • Credit được cộng ngay sau khi thanh toán thành công
-        </Text>
-        <Text style={styles.infoText}>
-          • Vui lòng liên hệ hỗ trợ nếu gặp vấn đề
-        </Text>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </ImageBackground>
   );
 };
 
 export default CreditScreen;
 
 const styles = StyleSheet.create({
+  background: { flex: 1, width: "100%", height: "100%" },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingTop: 50,
+    paddingHorizontal: 16,
+    paddingBottom: 14,
+    elevation: 6,
+    shadowColor: colors.black,
+    shadowOpacity: 0.25,
+    shadowRadius: 5,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: colors.white,
+    textAlign: "center",
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.black + "33",
+    justifyContent: "center",
+    alignItems: "center",
+  },
   container: {
     padding: 24,
-    backgroundColor: "#F8FAFC",
-  },
-  header: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#1E3A8A",
-    marginBottom: 6,
-  },
-  subHeader: {
-    fontSize: 14,
-    color: "#6B7280",
-    marginBottom: 24,
+    paddingBottom: 40,
   },
   infoBox: {
-    backgroundColor: "#EFF6FF",
+    backgroundColor: colors.white + "DD",
     padding: 18,
     borderRadius: 16,
     marginBottom: 20,
-    shadowColor: "#000",
-    shadowOpacity: 0.05,
+    shadowColor: colors.shadow,
+    shadowOpacity: 0.15,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 6,
-    elevation: 2,
+    elevation: 3,
   },
   infoLabel: {
     fontSize: 14,
-    color: "#1E40AF",
+    color: colors.primary,
     marginBottom: 4,
-    fontWeight: "500",
+    fontWeight: "600",
   },
   infoValue: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#1E3A8A",
+    color: colors.darkGray,
   },
   inputWrapper: {
     marginBottom: 20,
@@ -174,52 +219,54 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     marginBottom: 6,
-    color: "#1E40AF",
+    color: colors.darkGray,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#CBD5E1",
+    borderColor: colors.lightBlue,
     borderRadius: 16,
     padding: 14,
     fontSize: 16,
-    backgroundColor: "#fff",
+    backgroundColor: colors.white + "DD",
+    color: colors.black,
   },
   inputHint: {
     fontSize: 12,
-    color: "#6B7280",
+    color: colors.darkGray,
     marginTop: 4,
+    fontWeight: "700",
   },
   paymentBox: {
-    backgroundColor: "#DBEAFE",
+    backgroundColor: colors.lightBlue + "CC",
     borderWidth: 1,
-    borderColor: "#93C5FD",
+    borderColor: colors.primary,
     borderRadius: 16,
     padding: 16,
     marginBottom: 24,
   },
   button: {
-    backgroundColor: "#3B82F6",
+    backgroundColor: colors.primary,
     paddingVertical: 16,
     borderRadius: 16,
     alignItems: "center",
     marginBottom: 28,
-    shadowColor: "#3B82F6",
+    shadowColor: colors.primary,
     shadowOpacity: 0.3,
     shadowOffset: { width: 0, height: 6 },
     shadowRadius: 10,
-    elevation: 3,
+    elevation: 4,
   },
   buttonText: {
-    color: "#fff",
+    color: colors.white,
     fontWeight: "700",
     fontSize: 16,
   },
   infoSection: {
-    backgroundColor: "#E0F2FE",
+    backgroundColor: colors.lightBlue + "CC",
     padding: 18,
     borderRadius: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.03,
+    shadowColor: colors.shadow,
+    shadowOpacity: 0.05,
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 6,
     elevation: 1,
@@ -228,11 +275,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
     marginBottom: 10,
-    color: "#1E3A8A",
+    color: colors.darkGray,
   },
   infoText: {
     fontSize: 13,
-    color: "#1E40AF",
+    color: colors.darkGray,
     marginBottom: 4,
   },
 });

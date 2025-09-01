@@ -12,6 +12,7 @@ import FlashcardDetailScreen from "../screens/flashcard/FlashcardDetailScreen";
 
 // Course
 import CourseDetailScreen from "../screens/course/CourseDetailScreen";
+import LearnCourseScreen from "../screens/course/LearnCourseScreen";
 
 // Profile
 import ProfileDetailScreen from "../screens/profile/ProfileDetailScreen";
@@ -37,27 +38,28 @@ const AppStack = () => {
 
       {/* Course */}
       <Stack.Screen name="CourseDetail" component={CourseDetailScreen} />
+      <Stack.Screen name="LearnCourse" component={LearnCourseScreen} />
 
       {/* Profile */}
       <Stack.Screen
         name="ProfileDetail"
         component={ProfileDetailScreen}
-        options={{ headerShown: true, title: "Thông tin cá nhân" }}
+        options={{ headerShown: false, title: "Thông tin cá nhân" }}
       />
       <Stack.Screen
         name="TransactionHistory"
         component={PaymentHistoryScreen}
-        options={{ headerShown: true, title: "Lịch sử thanh toán" }}
+        options={{ headerShown: false, title: "Lịch sử thanh toán" }}
       />
       <Stack.Screen
         name="Credit"
         component={CreditScreen}
-        options={{ headerShown: true, title: "Số dư & Lịch sử Credit" }}
+        options={{ headerShown: false, title: "Số dư & Lịch sử Credit" }}
       />
       <Stack.Screen
         name="MyCourse"
         component={MyCourseScreen}
-        options={{ headerShown: true, title: "Khóa học của tôi" }}
+        options={{ headerShown: false, title: "Khóa học của tôi" }}
       />
     </Stack.Navigator>
   );

@@ -1,131 +1,123 @@
-// src/services/livestreamService.ts
-import axios from "axios";
-import { BASE_URL } from "../const/apiUrl/baseUrl";
-import { getAuthToken } from "../auth/AuthUtils";
+import axiosInstance from "../const/axios/axiosInstance";
 
-export enum LivestreamStatus {
-  SCHEDULED = "SCHEDULED",
-  LIVE = "LIVE",
-  COMPLETED = "COMPLETED",
-}
-
-export interface LivestreamDto {
+// --- Types ---
+export type Livestream = {
   livestreamId: string;
   courseId: string;
   description?: string;
   scheduledDateTime: string;
   durationMinutes: number;
-  status: LivestreamStatus;
-  courseName?: string;
+  status: "scheduled" | "ongoing" | "completed";
+};
+
+export type LivestreamTimetable = Livestream & {
+  courseName: string;
   endDateTime: string;
   isLive: boolean;
-  isScheduled: boolean;
+  canJoin: boolean;
   canStart: boolean;
-}
+  startsWithin15Minutes: boolean;
+  timeStatus: string;
+};
 
-export interface LivestreamJoinDto {
+export type LivestreamJoin = {
   token: string;
   roomName: string;
   title: string;
   scheduledDateTime: string;
   description?: string;
   durationMinutes: number;
-}
+};
 
-export interface LivestreamTimetableDto {
-  livestreamId: string;
-  courseId: string;
-  courseName: string;
-  description?: string;
-  scheduledDateTime: string;
-  durationMinutes: number;
-  status: LivestreamStatus;
-  endDateTime: string;
-  isLive: boolean;
+type CanJoinResponse = {
   canJoin: boolean;
-  canStart: boolean;
-  userRole: "STUDENT";
-  startsWithin15Minutes: boolean;
-  timeStatus: string;
-}
+};
 
-class LivestreamApiService {
-  private api = axios.create({
-    baseURL: BASE_URL,
-    headers: { "Content-Type": "application/json" },
-  });
-
-  private async authHeader() {
-    const token = await getAuthToken();
-    return token ? { Authorization: `Bearer ${token}` } : {};
+// --- API Functions ---
+const getLivestreamsByCourse = async (
+  courseId: string
+): Promise<Livestream[]> => {
+  try {
+    const { data } = await axiosInstance.get<Livestream[]>(
+      `/livestreams?courseId=${courseId}`
+    );
+    return data;
+  } catch (error) {
+    console.error(`Error fetching livestreams for course ${courseId}:`, error);
+    throw error;
   }
+};
 
-  // Get livestreams by course (student view)
-  async getLivestreamsByCourse(courseId: string): Promise<LivestreamDto[]> {
-    try {
-      const headers = await this.authHeader();
-      const res = await this.api.get(`/livestreams?courseId=${courseId}`, {
-        headers,
-      });
-      return res.data;
-    } catch (error: any) {
-      console.error("Failed to fetch livestreams by course:", error);
-      throw error;
-    }
+const getLivestreamById = async (livestreamId: string): Promise<Livestream> => {
+  try {
+    const { data } = await axiosInstance.get<Livestream>(
+      `/livestreams/${livestreamId}`
+    );
+    return data;
+  } catch (error) {
+    console.error(`Error fetching livestream ${livestreamId}:`, error);
+    throw error;
   }
+};
 
-  // Get livestream timetable for student
-  async getLivestreamTimetable(
-    userId: string
-  ): Promise<LivestreamTimetableDto[]> {
-    try {
-      const headers = await this.authHeader();
-      const res = await this.api.get(
-        `/livestreams?userId=${userId}&timetableFormat=true`,
-        { headers }
-      );
-      return res.data;
-    } catch (error: any) {
-      console.error("Failed to fetch livestream timetable:", error);
-      throw error;
-    }
+const getLivestreamsForEnrolledCourses = async (
+  userId: string
+): Promise<LivestreamTimetable[]> => {
+  try {
+    const { data } = await axiosInstance.get<LivestreamTimetable[]>(
+      `/livestreams?userId=${userId}&timetableFormat=true`
+    );
+    return data;
+  } catch (error) {
+    console.error(
+      `Error fetching livestream timetable for user ${userId}:`,
+      error
+    );
+    throw error;
   }
+};
 
-  // Generate join token for student
-  async generateJoinToken(
-    livestreamId: string,
-    userId: string
-  ): Promise<LivestreamJoinDto> {
-    try {
-      const headers = await this.authHeader();
-      const res = await this.api.get(
-        `/livestreams/${livestreamId}/join-token?userId=${userId}`,
-        { headers }
-      );
-      return res.data;
-    } catch (error: any) {
-      console.error("Failed to generate join token:", error);
-      throw error;
-    }
+const generateJoinToken = async (
+  livestreamId: string,
+  userId: string
+): Promise<LivestreamJoin> => {
+  try {
+    const { data } = await axiosInstance.get<LivestreamJoin>(
+      `/livestreams/${livestreamId}/join-token?userId=${userId}`
+    );
+    return data;
+  } catch (error) {
+    console.error(
+      `Error generating join token for livestream ${livestreamId}:`,
+      error
+    );
+    throw error;
   }
+};
 
-  // Check if student can join livestream
-  async canJoinLivestream(
-    livestreamId: string,
-    userId: string
-  ): Promise<boolean> {
-    try {
-      const headers = await this.authHeader();
-      const res = await this.api.get(
-        `/livestreams/${livestreamId}/can-join?userId=${userId}`,
-        { headers }
-      );
-      return res.data.canJoin;
-    } catch (error: any) {
-      console.error("Failed to check join permission:", error);
-      throw error;
-    }
+const canJoinLivestream = async (
+  livestreamId: string,
+  userId: string
+): Promise<boolean> => {
+  try {
+    const { data } = await axiosInstance.get<CanJoinResponse>(
+      `/livestreams/${livestreamId}/can-join?userId=${userId}`
+    );
+    return data.canJoin;
+  } catch (error) {
+    console.error(
+      `Error checking join permission for livestream ${livestreamId}:`,
+      error
+    );
+    throw error;
   }
-}
+};
 
-export const livestreamApi = new LivestreamApiService();
+// --- Export all functions under livestreamApi ---
+export const livestreamApi = {
+  getLivestreamsByCourse,
+  getLivestreamById,
+  getLivestreamsForEnrolledCourses,
+  generateJoinToken,
+  canJoinLivestream,
+};

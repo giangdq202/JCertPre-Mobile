@@ -27,6 +27,7 @@ export type AppStackParamList = {
   TransactionHistory: undefined;
   Credit: undefined;
   MyCourse: undefined;
+  LearnCourse: { courseId: string };
 };
 
 // ================== Course ==================

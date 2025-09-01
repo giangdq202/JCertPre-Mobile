@@ -1,5 +1,3 @@
-// src/types/pagination.ts
-
 /**
  * Represents a paginated list of items, mirroring the backend's Pagination<T> structure.
  * @template T The type of items in the paginated list.

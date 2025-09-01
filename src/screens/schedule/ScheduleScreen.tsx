@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -6,71 +6,28 @@ import {
   ImageBackground,
   FlatList,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import moment from "moment";
 import "moment/locale/vi";
 import { Ionicons } from "@expo/vector-icons";
+import {
+  livestreamApi,
+  LivestreamTimetable,
+} from "../../services/livestreamService";
+import { useAuth } from "../../auth/AuthContext";
 
 const background = require("../../assets/schedule.jpg");
 
-type Lesson = {
-  id: string;
-  title: string;
-  time: string;
-  description?: string;
-};
-
 type WeekSchedule = {
-  [date: string]: Lesson[];
-};
-
-// Dummy data
-const scheduleData: WeekSchedule = {
-  "2025-08-04": [
-    {
-      id: "1",
-      title: "Ngữ pháp N5",
-      time: "08:00 - 09:30",
-      description: "Học cấu trúc câu và mẫu ngữ pháp thường gặp.",
-    },
-    {
-      id: "2",
-      title: "Từ vựng N5",
-      time: "10:00 - 11:30",
-      description: "Học từ mới theo chủ đề gia đình và trường học.",
-    },
-  ],
-  "2025-08-05": [
-    {
-      id: "3",
-      title: "Đọc hiểu N5",
-      time: "13:00 - 14:30",
-      description: "Luyện đọc đoạn văn ngắn và trả lời câu hỏi.",
-    },
-  ],
-  "2025-08-06": [],
-  "2025-08-07": [
-    {
-      id: "4",
-      title: "Luyện nghe N5",
-      time: "08:00 - 09:30",
-      description: "Nghe đoạn hội thoại ngắn và luyện phản xạ.",
-    },
-  ],
-  "2025-08-08": [],
-  "2025-08-09": [
-    {
-      id: "5",
-      title: "Ôn tập N5",
-      time: "14:00 - 15:30",
-      description: "Ôn tổng hợp kiến thức tuần và luyện đề JLPT.",
-    },
-  ],
-  "2025-08-10": [],
+  [date: string]: LivestreamTimetable[];
 };
 
 const ScheduleScreen = () => {
+  const { userInfo } = useAuth();
   const [currentWeekOffset, setCurrentWeekOffset] = useState(0);
+  const [scheduleData, setScheduleData] = useState<WeekSchedule>({});
+  const [loading, setLoading] = useState(false);
 
   const getWeekDates = () => {
     const startOfWeek = moment()
@@ -85,15 +42,70 @@ const ScheduleScreen = () => {
   const startDate = moment(weekDates[0]).format("DD/MM");
   const endDate = moment(weekDates[6]).format("DD/MM");
 
-  const renderLesson = (lesson: Lesson) => (
-    <View key={lesson.id} style={styles.lessonCard}>
-      <Text style={styles.lessonTitle}>{lesson.title}</Text>
-      <Text style={styles.lessonTime}>{lesson.time}</Text>
-      {lesson.description && (
-        <Text style={styles.lessonDesc}>{lesson.description}</Text>
-      )}
-    </View>
-  );
+  useEffect(() => {
+    if (!userInfo?.id) return;
+
+    const fetchSchedule = async () => {
+      setLoading(true);
+      try {
+        const data = await livestreamApi.getLivestreamsForEnrolledCourses(
+          userInfo.id
+        );
+        const grouped: WeekSchedule = {};
+        data.forEach((item) => {
+          const date = moment(item.scheduledDateTime).format("YYYY-MM-DD");
+          if (!grouped[date]) grouped[date] = [];
+          grouped[date].push(item);
+        });
+        setScheduleData(grouped);
+      } catch (error) {
+        console.error("Error fetching livestream schedule:", error);
+        setScheduleData({});
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSchedule();
+  }, [userInfo?.id, currentWeekOffset]);
+
+  const renderLesson = (lesson: LivestreamTimetable) => {
+    let statusLabel = "";
+    let borderColor = "#10b981"; // scheduled
+
+    switch (lesson.status) {
+      case "ongoing":
+        statusLabel = "Đang diễn ra";
+        borderColor = "#f43f5e";
+        break;
+      case "completed":
+        statusLabel = "Đã kết thúc";
+        borderColor = "#9ca3af";
+        break;
+      default:
+        statusLabel = "Sắp diễn ra";
+    }
+
+    return (
+      <View
+        key={lesson.livestreamId}
+        style={[styles.lessonCard, { borderLeftColor: borderColor }]}
+      >
+        <Text style={styles.lessonTitle}>
+          {lesson.courseName || "Khóa học"}
+        </Text>
+        <Text style={styles.lessonTime}>
+          {moment(lesson.scheduledDateTime).format("HH:mm DD/MM/YYYY")}
+        </Text>
+        <Text style={styles.lessonDesc}>
+          {lesson.description || "Buổi học trực tuyến"}
+        </Text>
+        <Text style={[styles.statusLabel, { color: borderColor }]}>
+          {statusLabel}
+        </Text>
+      </View>
+    );
+  };
 
   const renderDay = (date: string) => {
     const dayLabel = moment(date).format("dddd (DD/MM)");
@@ -130,12 +142,21 @@ const ScheduleScreen = () => {
           </TouchableOpacity>
         </View>
 
-        <FlatList
-          data={weekDates}
-          keyExtractor={(item) => item}
-          renderItem={({ item }) => renderDay(item)}
-          contentContainerStyle={styles.contentContainer}
-        />
+        {loading ? (
+          <View
+            style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+          >
+            <ActivityIndicator size="large" color="#10b981" />
+            <Text style={{ marginTop: 10 }}>Đang tải lịch học...</Text>
+          </View>
+        ) : (
+          <FlatList
+            data={weekDates}
+            keyExtractor={(item) => item}
+            renderItem={({ item }) => renderDay(item)}
+            contentContainerStyle={styles.contentContainer}
+          />
+        )}
       </View>
     </ImageBackground>
   );
@@ -144,10 +165,7 @@ const ScheduleScreen = () => {
 export default ScheduleScreen;
 
 const styles = StyleSheet.create({
-  bgImage: {
-    flex: 1,
-    resizeMode: "cover",
-  },
+  bgImage: { flex: 1, resizeMode: "cover" },
   overlay: {
     flex: 1,
     backgroundColor: "rgba(255, 255, 255, 0.5)",
@@ -160,22 +178,13 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     marginBottom: 20,
   },
-  headerText: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#1f2937",
-  },
-  contentContainer: {
-    paddingBottom: 100,
-  },
+  headerText: { fontSize: 18, fontWeight: "bold", color: "#1f2937" },
+  contentContainer: { paddingBottom: 100 },
   dayContainer: {
     marginBottom: 16,
     backgroundColor: "#f9fafb",
     padding: 12,
     borderRadius: 10,
-    shadowColor: "#000",
-    shadowOpacity: 0.04,
-    shadowOffset: { width: 0, height: 2 },
   },
   dayTitle: {
     fontSize: 16,
@@ -189,25 +198,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 10,
     borderLeftWidth: 4,
-    borderLeftColor: "#10b981",
   },
-  lessonTitle: {
-    fontSize: 15,
-    fontWeight: "bold",
-    color: "#1f2937",
-  },
-  lessonTime: {
-    fontSize: 14,
-    color: "#374151",
-    marginTop: 2,
-  },
-  lessonDesc: {
-    fontSize: 13,
-    color: "#6b7280",
-    marginTop: 4,
-  },
-  noLesson: {
-    fontStyle: "italic",
-    color: "#9ca3af",
-  },
+  lessonTitle: { fontSize: 15, fontWeight: "bold", color: "#1f2937" },
+  lessonTime: { fontSize: 14, color: "#374151", marginTop: 2 },
+  lessonDesc: { fontSize: 13, color: "#6b7280", marginTop: 4 },
+  noLesson: { fontStyle: "italic", color: "#9ca3af" },
+  statusLabel: { marginTop: 4, fontWeight: "600" },
 });

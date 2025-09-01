@@ -14,7 +14,7 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { AppStackParamList } from "../../navigation/types";
 
-const avatar = require("../../assets/no-avatar.png");
+const defaultAvatar = require("../../assets/no-avatar.png");
 
 type ProfileScreenNavProp = NativeStackNavigationProp<
   AppStackParamList,
@@ -32,12 +32,19 @@ const ProfileScreen = () => {
     <ScrollView style={styles.container}>
       {/* Header */}
       <LinearGradient
-        colors={["#d1fae5", "#32CD32"]}
+        colors={["#a7f3d0", "#6ee7b7"]}
         style={styles.header}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
-        <Image source={avatar} style={styles.avatar} />
+        <View style={styles.avatarWrapper}>
+          <Image
+            source={
+              userInfo?.avatarUrl ? { uri: userInfo.avatarUrl } : defaultAvatar
+            }
+            style={styles.avatar}
+          />
+        </View>
         <Text style={styles.name}>
           {userInfo?.fullName || "Tên người dùng"}
         </Text>
@@ -46,85 +53,98 @@ const ProfileScreen = () => {
         </Text>
       </LinearGradient>
 
-      {/* Danh sách chức năng */}
+      {/* Cards */}
       <View style={styles.cardsContainer}>
         {/* Hồ sơ của tôi */}
         <TouchableOpacity
-          style={styles.card}
+          style={[styles.card, { borderLeftColor: "#93c5fd" }]}
           onPress={() => navigation.navigate("ProfileDetail")}
+          activeOpacity={0.8}
         >
-          <Feather name="user" size={28} color="#4F46E5" />
-          <View style={{ marginLeft: 12 }}>
+          <Feather name="user" size={28} color="#3b82f6" />
+          <View style={styles.cardText}>
             <Text style={styles.cardLabel}>Hồ sơ của tôi</Text>
             <Text style={styles.cardValue}>Xem và chỉnh sửa thông tin</Text>
           </View>
           <Feather
             name="chevron-right"
             size={24}
-            color="#4F46E5"
-            style={{ marginLeft: "auto" }}
+            color="#3b82f6"
+            style={styles.chevron}
           />
         </TouchableOpacity>
 
         {/* Khóa học của tôi */}
         <TouchableOpacity
-          style={styles.card}
+          style={[styles.card, { borderLeftColor: "#fde68a" }]}
           onPress={() => navigation.navigate("MyCourse")}
+          activeOpacity={0.8}
         >
-          <Feather name="book-open" size={28} color="#F59E0B" />
-          <View style={{ marginLeft: 12 }}>
+          <Feather name="book-open" size={28} color="#f59e0b" />
+          <View style={styles.cardText}>
             <Text style={styles.cardLabel}>Khóa học của tôi</Text>
             <Text style={styles.cardValue}>Danh sách khóa học đã đăng ký</Text>
           </View>
           <Feather
             name="chevron-right"
             size={24}
-            color="#F59E0B"
-            style={{ marginLeft: "auto" }}
+            color="#f59e0b"
+            style={styles.chevron}
           />
         </TouchableOpacity>
 
-        {/* Credit Card */}
+        {/* Số dư Credit */}
         <TouchableOpacity
-          style={styles.card}
+          style={[styles.card, { borderLeftColor: "#86efac" }]}
           onPress={() => navigation.navigate("Credit")}
+          activeOpacity={0.8}
         >
-          <Feather name="credit-card" size={28} color="#32CD32" />
-          <View style={{ marginLeft: 12 }}>
+          <Feather name="credit-card" size={28} color="#16a34a" />
+          <View style={styles.cardText}>
             <Text style={styles.cardLabel}>Số dư Credit</Text>
-            <Text style={styles.cardValue}>
-              {formatCurrency(userInfo?.credit || 0)}
-            </Text>
+            <LinearGradient
+              colors={["#a7f3d0", "#6ee7b7"]}
+              style={styles.creditValueWrapper}
+            >
+              <Text style={styles.cardValueWhite}>
+                {formatCurrency(userInfo?.credit || 0)}
+              </Text>
+            </LinearGradient>
           </View>
           <Feather
             name="chevron-right"
             size={24}
-            color="#32CD32"
-            style={{ marginLeft: "auto" }}
+            color="#16a34a"
+            style={styles.chevron}
           />
         </TouchableOpacity>
 
-        {/* Payment History Card */}
+        {/* Lịch sử thanh toán */}
         <TouchableOpacity
-          style={styles.card}
+          style={[styles.card, { borderLeftColor: "#fdba74" }]}
           onPress={() => navigation.navigate("TransactionHistory")}
+          activeOpacity={0.8}
         >
-          <Feather name="clock" size={28} color="#FFB74D" />
-          <View style={{ marginLeft: 12 }}>
+          <Feather name="clock" size={28} color="#f97316" />
+          <View style={styles.cardText}>
             <Text style={styles.cardLabel}>Lịch sử thanh toán</Text>
             <Text style={styles.cardValue}>Xem chi tiết</Text>
           </View>
           <Feather
             name="chevron-right"
             size={24}
-            color="#FFB74D"
-            style={{ marginLeft: "auto" }}
+            color="#f97316"
+            style={styles.chevron}
           />
         </TouchableOpacity>
       </View>
 
-      {/* Logout Button */}
-      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+      {/* Logout */}
+      <TouchableOpacity
+        style={styles.logoutButton}
+        onPress={handleLogout}
+        activeOpacity={0.8}
+      >
         <Feather name="log-out" size={20} color="#fff" />
         <Text style={styles.logoutText}>Đăng xuất</Text>
       </TouchableOpacity>
@@ -135,21 +155,26 @@ const ProfileScreen = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#f0fdf4" },
   header: {
-    paddingVertical: 36,
+    paddingVertical: 40,
     alignItems: "center",
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 8,
+    elevation: 5,
   },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 999,
+  avatarWrapper: {
+    borderRadius: 60,
     borderWidth: 3,
     borderColor: "#fff",
+    padding: 3,
     marginBottom: 12,
   },
-  name: { fontSize: 20, fontWeight: "700", color: "#065f46" },
-  email: { fontSize: 14, color: "#047857" },
+  avatar: { width: 110, height: 110, borderRadius: 55 },
+  name: { fontSize: 22, fontWeight: "700", color: "#065f46" },
+  email: { fontSize: 15, color: "#047857", marginTop: 2 },
   cardsContainer: { padding: 20 },
   card: {
     flexDirection: "row",
@@ -160,23 +185,44 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     elevation: 3,
     shadowColor: "#000",
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.08,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
+    borderLeftWidth: 4,
   },
-  cardLabel: { fontSize: 14, color: "#6b7280" },
-  cardValue: { fontSize: 16, fontWeight: "700", color: "#047857" },
+  cardText: { marginLeft: 12, flex: 1 },
+  cardLabel: { fontSize: 14, color: "#374151" },
+  cardValue: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#065f46",
+    marginTop: 2,
+  },
+  creditValueWrapper: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginTop: 4,
+    alignSelf: "flex-start",
+  },
+  cardValueWhite: { color: "#fff", fontWeight: "700" },
+  chevron: { marginLeft: "auto" },
   logoutButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#10b981",
-    margin: 24,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+    backgroundColor: "#16a34a",
+    marginHorizontal: 24,
+    marginVertical: 30,
+    paddingVertical: 14,
     borderRadius: 12,
     justifyContent: "center",
   },
-  logoutText: { marginLeft: 8, fontSize: 15, color: "#fff", fontWeight: "600" },
+  logoutText: {
+    marginLeft: 10,
+    fontSize: 16,
+    color: "#fff",
+    fontWeight: "600",
+  },
 });
 
 export default ProfileScreen;

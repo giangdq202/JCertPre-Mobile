@@ -1,30 +1,48 @@
+import { Pagination } from "../types/pagination";
+import { LessonDto } from "../types/lessonDto";
 import axiosInstance from "../const/axios/axiosInstance";
-export type Lesson = {
-  lessonId: string;
-  title: string;
-  content?: string;
-  videoUrl?: string;
-  courseId: string;
-};
 
 /**
- * Lấy danh sách lesson của một khóa học (STUDENT role)
- * @param courseId ID của khóa học
- * @param searchTerm Tùy chọn, tìm kiếm theo tên lesson
- * @returns Mảng các lesson
+ * Lấy danh sách bài học theo ID khóa học (có phân trang)
  */
-export const getLessonsByCourseId = async (
+export async function getLessonsByCourseId(
   courseId: string,
-  searchTerm?: string
-): Promise<Lesson[]> => {
+  searchTerm?: string,
+  pageIndex: number = 1,
+  pageSize: number = 10
+): Promise<Pagination<LessonDto>> {
   try {
-    const response = await axiosInstance.get<Lesson[]>(
+    const response = await axiosInstance.get<Pagination<LessonDto>>(
       `/lessons/by-course/${courseId}`,
-      { params: { searchTerm } }
+      {
+        params: {
+          searchTerm,
+          pageIndex,
+          pageSize,
+        },
+      }
     );
+
+    console.log("API /lessons/by-course response:", response.data);
     return response.data;
   } catch (error) {
-    console.error(`Error fetching lessons for course ${courseId}:`, error);
+    console.error("getLessonsByCourseId error:", error);
     throw error;
   }
-};
+}
+
+/**
+ * Lấy chi tiết bài học theo ID
+ */
+export async function getLessonById(lessonId: string): Promise<LessonDto> {
+  try {
+    const response = await axiosInstance.get<LessonDto>(`/lessons/${lessonId}`);
+    console.log("API /lessons/:id response:", response.data);
+
+    if (!response.data) throw new Error(`Không tìm thấy bài học ${lessonId}`);
+    return response.data;
+  } catch (error) {
+    console.error("getLessonById error:", error);
+    throw error;
+  }
+}

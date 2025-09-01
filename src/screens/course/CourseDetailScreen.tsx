@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Dimensions,
   ActivityIndicator,
+  Modal,
   Alert,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -24,7 +25,6 @@ import {
 
 const { width } = Dimensions.get("window");
 
-// Type cho navigation
 type NavigationProp = NativeStackNavigationProp<
   AppStackParamList,
   "CourseDetail"
@@ -49,8 +49,8 @@ const CourseDetailScreen = () => {
   const [courseDetail, setCourseDetail] = useState<Course>(course);
   const [enrolled, setEnrolled] = useState(false);
   const [checkingEnroll, setCheckingEnroll] = useState(true);
+  const [modalVisible, setModalVisible] = useState(false);
 
-  // Kiểm tra trạng thái ghi danh khi vào màn hình
   useEffect(() => {
     const fetchEnrollment = async () => {
       try {
@@ -65,20 +65,22 @@ const CourseDetailScreen = () => {
         setCheckingEnroll(false);
       }
     };
-
     fetchEnrollment();
   }, [courseId]);
 
-  // Xử lý bấm đăng ký
-  const handleEnroll = () => {
-    if (checkingEnroll) return;
-
-    enrollSelfInCourse({ courseId: courseDetail.courseId })
-      .then(() => {
-        setEnrolled(true);
-        Alert.alert("Thành công", "Bạn đã đăng ký khóa học!");
-      })
-      .catch(() => Alert.alert("Lỗi", "Không thể đăng ký khóa học."));
+  const handleEnroll = async () => {
+    try {
+      setModalVisible(false); // đóng modal
+      setCheckingEnroll(true);
+      await enrollSelfInCourse({ courseId: courseDetail.courseId });
+      setEnrolled(true);
+      Alert.alert("Thành công", "Bạn đã đăng ký khóa học!");
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Lỗi", "Không thể đăng ký khóa học.");
+    } finally {
+      setCheckingEnroll(false);
+    }
   };
 
   return (
@@ -120,7 +122,7 @@ const CourseDetailScreen = () => {
               enrolled && { backgroundColor: "#9ca3af" },
             ]}
             disabled={enrolled || checkingEnroll}
-            onPress={handleEnroll}
+            onPress={() => setModalVisible(true)}
           >
             <Text style={styles.enrollText}>
               {enrolled ? "Đã đăng ký" : "Đăng ký ngay"}
@@ -128,6 +130,38 @@ const CourseDetailScreen = () => {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Modal confirm */}
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>Xác nhận đăng ký</Text>
+            <Text style={styles.modalMessage}>
+              Bạn có chắc chắn muốn đăng ký khóa học này không?
+            </Text>
+
+            <View style={styles.modalButtonsRow}>
+              <TouchableOpacity
+                style={[styles.modalBtn, { backgroundColor: "#10b981" }]}
+                onPress={handleEnroll}
+              >
+                <Text style={styles.modalBtnText}>Đồng ý</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalBtn, { backgroundColor: "#9ca3af" }]}
+                onPress={() => setModalVisible(false)}
+              >
+                <Text style={styles.modalBtnText}>Huỷ</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </LinearGradient>
   );
 };
@@ -203,6 +237,45 @@ const styles = StyleSheet.create({
   },
   enrollText: { color: "white", fontSize: 16, fontWeight: "600" },
   loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  modalBox: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 24,
+    width: "100%",
+    maxWidth: 380,
+    elevation: 4,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  modalMessage: {
+    fontSize: 15,
+    color: "#4b5563",
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  modalButtonsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  modalBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  modalBtnText: { color: "white", fontWeight: "600", fontSize: 16 },
 });
 
 export default CourseDetailScreen;
