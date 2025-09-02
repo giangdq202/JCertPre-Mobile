@@ -25,9 +25,9 @@ import CreditScreen from "../screens/profile/CreditScreen";
 import MyCourseScreen from "../screens/profile/MyCourseScreen";
 
 // Quiz
-import QuizSetupScreen from "../screens/QuizSetupScreen";
-import QuizScreen from "../screens/QuizScreen";
-import QuizResultsScreen from "../screens/QuizResultsScreen";
+import QuizSetupScreen from "../screens/quiz/QuizSetupScreen";
+import QuizScreen from "../screens/quiz/QuizScreen";
+import QuizResultsScreen from "../screens/quiz/QuizResultsScreen";
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
 
@@ -52,7 +52,7 @@ const AppStack = () => {
       {/* Test */}
       <Stack.Screen name="TestDetail" component={TestDetailScreen} />
       <Stack.Screen name="TestHistory" component={TestHistoryScreen} />
-      
+
       {/* Profile */}
       <Stack.Screen
         name="ProfileDetail"
