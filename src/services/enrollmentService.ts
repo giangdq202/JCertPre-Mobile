@@ -47,7 +47,10 @@ export const enrollSelfInCourse = async (
     );
     return response.data;
   } catch (error) {
-    console.error("Lỗi khi tự ghi danh vào khóa học:", error);
+    // Chỉ log trong development, không hiển thị popup
+    if (__DEV__) {
+      console.log("Lỗi khi tự ghi danh vào khóa học:", error);
+    }
     throw error;
   }
 };
@@ -64,10 +67,13 @@ export const checkEnrollmentStatus = async (
     );
     return response.data;
   } catch (error) {
-    console.error(
-      `Lỗi khi kiểm tra trạng thái ghi danh khóa học ${courseId}:`,
-      error
-    );
+    // Chỉ log trong development, không hiển thị popup
+    if (__DEV__) {
+      console.log(
+        `Lỗi khi kiểm tra trạng thái ghi danh khóa học ${courseId}:`,
+        error
+      );
+    }
     throw error;
   }
 };
@@ -82,7 +88,10 @@ export const getMyEnrollments = async (): Promise<EnrollmentDetailDto[]> => {
     );
     return response.data;
   } catch (error) {
-    console.error("Lỗi khi lấy các ghi danh của tôi:", error);
+    // Chỉ log trong development, không hiển thị popup
+    if (__DEV__) {
+      console.log("Lỗi khi lấy các ghi danh của tôi:", error);
+    }
     throw error;
   }
 };
@@ -99,7 +108,10 @@ export const unenrollFromCourse = async (
     );
     return response.data;
   } catch (error) {
-    console.error(`Lỗi khi hủy ghi danh khỏi khóa học ${courseId}:`, error);
+    // Chỉ log trong development, không hiển thị popup
+    if (__DEV__) {
+      console.log(`Lỗi khi hủy ghi danh khỏi khóa học ${courseId}:`, error);
+    }
     throw error;
   }
 };

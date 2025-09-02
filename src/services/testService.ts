@@ -3,6 +3,8 @@ import {
   GET_TESTS_BY_USER_URL,
   GET_TEST_BY_LESSON_URL,
   GET_TEST_BY_ID_URL,
+  AUTO_CREATE_TEST_URL,
+  TEST_BASE_URL,
 } from "../const/apiUrl/baseUrl";
 import { TestDto } from "../types/testDto";
 
@@ -27,6 +29,18 @@ export enum CourseLevel {
   N1 = 4,
 }
 
+// Interfaces
+export interface CreateAutoTestInput {
+  testType: TestType;
+  courseLevel: CourseLevel;
+}
+
+export interface CreateAutoTestResult {
+  testId: string;
+  title?: string;
+  description?: string;
+}
+
 // Pagination generic type
 export interface Pagination<T> {
   pageIndex: number;
@@ -46,6 +60,102 @@ export interface GetTestsByUserIdParams {
   testType?: TestType;
   courseLevel?: CourseLevel;
 }
+
+/**
+ * Create test from template (alternative approach)
+ */
+export const createTestFromTemplate = async (
+  templateId: string,
+  userId: string,
+  testType: TestType,
+  courseLevel: CourseLevel
+): Promise<CreateAutoTestResult> => {
+  try {
+    const url = `${TEST_BASE_URL}/create-from-template`;
+    const payload = {
+      templateId,
+      userId,
+      testType,
+      courseLevel,
+    };
+
+    if (__DEV__) {
+      console.log("Creating test from template with URL:", url);
+      console.log("Payload:", payload);
+    }
+
+    const response = await axiosInstance.post(url, payload);
+
+    if (__DEV__) {
+      console.log("Test from template creation response:", response.data);
+    }
+
+    return response.data;
+  } catch (error: any) {
+    if (__DEV__) {
+      console.log("Failed to create test from template:", error);
+      if (error.response) {
+        console.log("Response status:", error.response.status);
+        console.log("Response data:", error.response.data);
+      }
+    }
+    throw error;
+  }
+};
+
+/**
+ * Create auto test
+ */
+export const createAutoTest = async (
+  input: CreateAutoTestInput,
+  userId: string
+): Promise<CreateAutoTestResult> => {
+  try {
+    const queryParams = new URLSearchParams();
+    queryParams.append("userId", userId);
+    queryParams.append("testType", input.testType.toString());
+    queryParams.append("courseLevel", input.courseLevel.toString());
+
+    const url = `${TEST_BASE_URL}/auto-create?${queryParams.toString()}`;
+
+    if (__DEV__) {
+      console.log("Creating auto test with URL:", url);
+      console.log("Input:", input);
+    }
+
+    // Try POST first
+    let response;
+    try {
+      response = await axiosInstance.post(url, {});
+    } catch (postError: any) {
+      if (__DEV__) {
+        console.log("POST failed, trying GET:", postError.response?.status);
+      }
+      // If POST fails with 405, try GET
+      if (postError.response?.status === 405) {
+        response = await axiosInstance.get(url);
+      } else {
+        throw postError;
+      }
+    }
+
+    if (__DEV__) {
+      console.log("Auto test creation response:", response.data);
+    }
+
+    return response.data;
+  } catch (error: any) {
+    if (__DEV__) {
+      console.log("Failed to create auto test:", error);
+      if (error.response) {
+        console.log("Response status:", error.response.status);
+        console.log("Response data:", error.response.data);
+        console.log("Response headers:", error.response.headers);
+      }
+    }
+    throw error;
+  }
+};
 
 /**
  * Get all tests for a user with pagination
@@ -76,7 +186,7 @@ export const getAllByUserId = async (
     const response = await axiosInstance.get(url);
     return response.data as Pagination<TestDto>;
   } catch (error) {
-    console.error("Failed to get tests by user ID:", error);
+    // console.error("Failed to get tests by user ID:", error);
     throw error;
   }
 };
@@ -92,7 +202,7 @@ export const getByLessonId = async (
     return response.data;
   } catch (error: any) {
     if (error.response?.status === 404) return null;
-    console.error("Failed to get test by lesson ID:", error);
+    // console.error("Failed to get test by lesson ID:", error);
     throw error;
   }
 };
@@ -106,12 +216,14 @@ export const getByTestId = async (testId: string): Promise<TestDto | null> => {
     return response.data;
   } catch (error: any) {
     if (error.response?.status === 404) return null;
-    console.error("Failed to get test by test ID:", error);
+    // console.error("Failed to get test by test ID:", error);
     throw error;
   }
 };
 
 export default {
+  createAutoTest,
+  createTestFromTemplate,
   getAllByUserId,
   getByLessonId,
   getByTestId,

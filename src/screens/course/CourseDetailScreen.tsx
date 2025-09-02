@@ -12,7 +12,7 @@ import {
   Alert,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "react-native-vector-icons/Ionicons";
 import { RouteProp, useRoute, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
@@ -60,7 +60,7 @@ const CourseDetailScreen = () => {
         );
         setEnrolled(status.isEnrolled);
       } catch (error) {
-        console.error("Lỗi kiểm tra ghi danh:", error);
+        // console.error("Lỗi kiểm tra ghi danh:", error);
       } finally {
         setCheckingEnroll(false);
       }
@@ -70,14 +70,61 @@ const CourseDetailScreen = () => {
 
   const handleEnroll = async () => {
     try {
-      setModalVisible(false); // đóng modal
+      setModalVisible(false);
       setCheckingEnroll(true);
       await enrollSelfInCourse({ courseId: courseDetail.courseId });
       setEnrolled(true);
       Alert.alert("Thành công", "Bạn đã đăng ký khóa học!");
-    } catch (error) {
-      console.error(error);
-      Alert.alert("Lỗi", "Không thể đăng ký khóa học.");
+    } catch (error: any) {
+      // Không log error để tránh popup
+      // console.error("Enroll error:", error);
+
+      // Xử lý các loại lỗi cụ thể
+      if (error.response?.status === 400) {
+        const errorMessage = error.response.data?.message || "";
+        const errorCode = error.response.data?.errorCode || "";
+
+        // Kiểm tra lỗi thiếu credit
+        if (
+          errorCode === "INSUFFICIENT_CREDIT" ||
+          errorMessage.toLowerCase().includes("credit") ||
+          errorMessage.toLowerCase().includes("không đủ") ||
+          errorMessage.toLowerCase().includes("insufficient")
+        ) {
+          Alert.alert(
+            "Không đủ Credit",
+            `Bạn không có đủ credit để đăng ký khóa học này. Khóa học cần ${courseDetail.price} credit.\n\nVui lòng nạp thêm credit để tiếp tục.`,
+            [
+              { text: "Hủy", style: "cancel" },
+              {
+                text: "Nạp Credit",
+                onPress: () => navigation.navigate("Credit"),
+              },
+            ]
+          );
+        } else {
+          // Hiển thị message từ server hoặc message mặc định
+          const displayMessage =
+            errorMessage || "Bạn không đủ credit để đăng ký khóa học này.";
+          Alert.alert("Lỗi đăng ký", displayMessage);
+        }
+      } else if (error.response?.status === 409) {
+        Alert.alert("Thông báo", "Bạn đã đăng ký khóa học này rồi!");
+      } else if (error.response?.status === 401) {
+        Alert.alert(
+          "Lỗi xác thực",
+          "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."
+        );
+      } else {
+        // Lỗi khác
+        const genericMessage =
+          error.response?.data?.message ||
+          "Không thể đăng ký khóa học. Vui lòng thử lại sau.";
+        Alert.alert("Lỗi", genericMessage);
+      }
+
+      // Không throw lại error để tránh popup mặc định của React Native
+      return;
     } finally {
       setCheckingEnroll(false);
     }

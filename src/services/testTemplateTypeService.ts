@@ -1,5 +1,5 @@
 import axiosInstance from "../const/axios/axiosInstance";
-import { GET_TEST_TEMPLATES_BY_TYPE_URL } from "../const/apiUrl/baseUrl";
+import { GET_TEST_TEMPLATE_TYPES_URL } from "../const/apiUrl/baseUrl";
 
 export enum CourseLevel {
   N5 = 0,
@@ -83,15 +83,31 @@ export const getAllTestTemplateTypes = async (
     queryParams.append("pageIndex", pageIndex.toString());
     queryParams.append("pageSize", pageSize.toString());
 
-    const url = `${GET_TEST_TEMPLATES_BY_TYPE_URL}?${queryParams.toString()}`;
+    const url = `${GET_TEST_TEMPLATE_TYPES_URL}?${queryParams.toString()}`;
+
+    if (__DEV__) {
+      console.log("Fetching test template types from:", url);
+    }
+
     const response = await axiosInstance.get(url);
+
+    if (__DEV__) {
+      console.log("Test template types response:", response.data);
+    }
 
     return response.data;
   } catch (error: any) {
-    console.error(
-      "Failed to get test template types for student (mobile):",
-      error
-    );
+    // Chỉ log trong development, không hiển thị popup
+    if (__DEV__) {
+      console.log(
+        "Failed to get test template types for student (mobile):",
+        error
+      );
+      if (error.response) {
+        console.log("Response status:", error.response.status);
+        console.log("Response data:", error.response.data);
+      }
+    }
     throw error;
   }
 };

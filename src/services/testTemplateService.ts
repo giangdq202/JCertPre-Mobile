@@ -35,12 +35,28 @@ export const getAllByTypeId = async (
   testTemplateTypeId: string
 ): Promise<TestTemplateDto[]> => {
   try {
-    const response = await axiosInstance.get(
-      GET_TEST_TEMPLATES_BY_TYPE_URL(testTemplateTypeId)
-    );
+    const url = GET_TEST_TEMPLATES_BY_TYPE_URL(testTemplateTypeId);
+
+    if (__DEV__) {
+      console.log("Fetching test templates from:", url);
+    }
+
+    const response = await axiosInstance.get(url);
+
+    if (__DEV__) {
+      console.log("Test templates response:", response.data);
+    }
+
     return response.data;
-  } catch (error) {
-    console.error("Failed to get test templates by type ID:", error);
+  } catch (error: any) {
+    // console.error("Failed to get test templates by type ID:", error);
+    if (__DEV__) {
+      console.log("Failed to get test templates by type ID:", error);
+      if (error.response) {
+        console.log("Response status:", error.response.status);
+        console.log("Response data:", error.response.data);
+      }
+    }
     throw error;
   }
 };

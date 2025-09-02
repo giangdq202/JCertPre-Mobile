@@ -6,12 +6,14 @@ import {
   View,
   Pressable,
 } from "react-native";
-import { Feather, Ionicons } from "@expo/vector-icons";
+import Icon from "react-native-vector-icons/Feather";
+import Ionicons from "react-native-vector-icons/Ionicons";
 
 type OptionProps = {
-  icon: keyof typeof Feather.glyphMap;
   label: string;
-  onPress?: () => void;
+  icon: string;
+  onPress: () => void;
+  disabled?: boolean;
 };
 
 const Option: React.FC<OptionProps> = ({ icon, label, onPress }) => {
@@ -21,7 +23,7 @@ const Option: React.FC<OptionProps> = ({ icon, label, onPress }) => {
       onPress={onPress}
     >
       <View style={styles.iconContainer}>
-        <Feather name={icon} size={20} color="#66BB6A" />
+        <Icon name={icon} size={20} color="#66BB6A" />
       </View>
       <Text style={styles.optionText}>{label}</Text>
       <Ionicons name="chevron-forward" size={20} color="#9ca3af" />

@@ -27,10 +27,10 @@ export const getStudentPaymentHistory = async (
     );
     return data;
   } catch (error) {
-    console.error(
-      "[StudentPaymentService] getStudentPaymentHistory error:",
-      error
-    );
+    // console.error(
+    //   "[StudentPaymentService] getStudentPaymentHistory error:",
+    //   error
+    // );
     throw error;
   }
 };
@@ -48,10 +48,10 @@ export const getStudentCreditHistory = async (
     );
     return data;
   } catch (error) {
-    console.error(
-      "[StudentPaymentService] getStudentCreditHistory error:",
-      error
-    );
+    // console.error(
+    //   "[StudentPaymentService] getStudentCreditHistory error:",
+    //   error
+    // );
     throw error;
   }
 };
@@ -71,7 +71,7 @@ export const checkStudentCredit = async (
     );
     return data;
   } catch (error) {
-    console.error("[StudentPaymentService] checkStudentCredit error:", error);
+    // console.error("[StudentPaymentService] checkStudentCredit error:", error);
     throw error;
   }
 };
@@ -90,10 +90,13 @@ export const createStudentCreditPurchase = async (
     );
     return data;
   } catch (error) {
-    console.error(
-      "[StudentPaymentService] createStudentCreditPurchase error:",
-      error
-    );
+    // Chỉ log trong development, không hiển thị popup
+    if (__DEV__) {
+      console.log(
+        "[StudentPaymentService] createStudentCreditPurchase error:",
+        error
+      );
+    }
     throw error;
   }
 };

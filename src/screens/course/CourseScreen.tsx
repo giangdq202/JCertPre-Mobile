@@ -23,6 +23,8 @@ import {
   CourseQueryParameters,
 } from "../../services/courseService";
 
+import SearchBar from "../../components/SearchBar";
+
 const levelLabels = ["N5", "N4", "N3", "N2", "N1"];
 
 export default function CourseScreen() {
@@ -52,7 +54,7 @@ export default function CourseScreen() {
       const res = await getCourses(params);
       setCourses(res.items);
     } catch (error) {
-      console.error("Error fetching courses:", error);
+      // console.error("Error fetching courses:", error);
     } finally {
       setLoading(false);
     }
@@ -69,31 +71,20 @@ export default function CourseScreen() {
       resizeMode="cover"
     >
       <View style={styles.container}>
-        {/* Search */}
-        <View style={styles.searchContainer}>
-          <MaterialCommunityIcons
-            name="magnify"
-            size={20}
-            color="#777"
-            style={styles.searchIcon}
-          />
-          <TextInput
-            placeholder="Tìm kiếm khóa học, từ vựng..."
-            style={styles.searchInput}
-            value={searchText}
-            onChangeText={setSearchText}
-            placeholderTextColor="#777"
-          />
-        </View>
+        <SearchBar
+          value={searchText}
+          onChangeText={setSearchText}
+          placeholder="Tìm khóa học..."
+        />
 
         {/* Bộ lọc cấp độ */}
-        <View style={styles.levelFilter}>
+        <View style={styles.filterRow}>
           {levelLabels.map((label, index) => (
             <TouchableOpacity
               key={label}
               style={[
-                styles.levelButton,
-                selectedLevel === index && styles.levelButtonSelected,
+                styles.levelOption,
+                selectedLevel === index && styles.levelOptionActive,
               ]}
               onPress={() =>
                 setSelectedLevel(selectedLevel === index ? null : index)
@@ -101,8 +92,8 @@ export default function CourseScreen() {
             >
               <Text
                 style={[
-                  styles.levelButtonText,
-                  selectedLevel === index && styles.levelButtonTextSelected,
+                  styles.levelOptionText,
+                  selectedLevel === index && styles.levelOptionTextActive,
                 ]}
               >
                 {label}
@@ -185,30 +176,34 @@ const styles = StyleSheet.create({
     color: "#333",
     paddingVertical: 0,
   },
-  levelFilter: {
+  filterRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
+    justifyContent: "space-between",
     marginBottom: 16,
-    justifyContent: "center",
   },
-  levelButton: {
-    paddingVertical: 6,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    backgroundColor: "#e5e7eb",
+  levelOption: {
+    flex: 1,
+    marginHorizontal: 4,
+    paddingVertical: 8,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    backgroundColor: "#fff",
+    alignItems: "center",
   },
-  levelButtonSelected: {
+  levelOptionActive: {
     backgroundColor: "#10b981",
+    borderColor: "#10b981",
   },
-  levelButtonText: {
+  levelOptionText: {
     fontSize: 14,
+    fontWeight: "600",
     color: "#374151",
   },
-  levelButtonTextSelected: {
-    color: "white",
-    fontWeight: "600",
+  levelOptionTextActive: {
+    color: "#fff",
   },
+
   courseList: {
     paddingBottom: 80,
     flexGrow: 1,

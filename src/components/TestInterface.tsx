@@ -8,9 +8,10 @@ import {
   ActivityIndicator,
   Modal,
   Alert,
+  StyleSheet,
 } from "react-native";
 import { Audio } from "expo-av";
-import { FontAwesome } from "@expo/vector-icons";
+import Icon from "react-native-vector-icons/FontAwesome";
 
 import { useAuth } from "../auth/AuthContext";
 import { useLessonProgress } from "../hooks/useLessonProgress";
@@ -138,7 +139,6 @@ export const TestInterface: React.FC<TestInterfaceProps> = ({
       }
       setPlayingAudio(audioUrl);
     } catch (err) {
-      console.error(err);
       Alert.alert("Lỗi audio", "Không thể phát âm thanh");
       setPlayingAudio(null);
     }
@@ -158,7 +158,6 @@ export const TestInterface: React.FC<TestInterfaceProps> = ({
         const testQuestions = await getQuestionsByTestId(test.testId);
         setTotalQuestions(testQuestions.length);
       } catch (err) {
-        console.error(err);
         setTotalQuestions(0);
       }
     };
@@ -212,7 +211,6 @@ export const TestInterface: React.FC<TestInterfaceProps> = ({
 
       setTestStatus("in_progress");
     } catch (err) {
-      console.error(err);
       Alert.alert("Lỗi", "Không thể bắt đầu bài test");
     } finally {
       setIsLoading(false);
@@ -236,7 +234,7 @@ export const TestInterface: React.FC<TestInterfaceProps> = ({
         textAnswer,
       });
     } catch (err) {
-      console.error(err);
+      // Handle error silently
     }
   };
 
@@ -265,7 +263,6 @@ export const TestInterface: React.FC<TestInterfaceProps> = ({
       }
       onTestCompleted?.();
     } catch (err) {
-      console.error(err);
       Alert.alert("Lỗi", "Không thể nộp bài");
     } finally {
       setIsSubmitting(false);
@@ -278,29 +275,23 @@ export const TestInterface: React.FC<TestInterfaceProps> = ({
   // ---------- RENDER ----------
   if (testStatus === "not_started") {
     return (
-      <View className="flex-1 justify-center items-center p-4">
-        <FontAwesome
+      <View style={styles.container}>
+        <Icon
           name="play"
           size={60}
           color="#3B82F6"
           style={{ marginBottom: 16 }}
         />
-        <Text className="text-2xl font-bold mb-4">{test.title}</Text>
-        <Text className="text-gray-600 mb-6">{test.description}</Text>
-        <TouchableOpacity
-          onPress={onBack}
-          className="bg-gray-500 px-6 py-3 rounded-lg mb-2"
-        >
-          <Text className="text-white text-center">Quay lại</Text>
+        <Text style={styles.title}>{test.title}</Text>
+        <Text style={styles.description}>{test.description}</Text>
+        <TouchableOpacity onPress={onBack} style={styles.backButton}>
+          <Text style={styles.buttonText}>Quay lại</Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          onPress={handleStartTest}
-          className="bg-blue-600 px-8 py-3 rounded-lg"
-        >
+        <TouchableOpacity onPress={handleStartTest} style={styles.startButton}>
           {isLoading ? (
             <ActivityIndicator color="white" />
           ) : (
-            <Text className="text-white text-center">Bắt đầu làm bài</Text>
+            <Text style={styles.buttonText}>Bắt đầu làm bài</Text>
           )}
         </TouchableOpacity>
       </View>
@@ -309,31 +300,28 @@ export const TestInterface: React.FC<TestInterfaceProps> = ({
 
   if (testStatus === "completed" && testResult) {
     return (
-      <ScrollView className="flex-1 p-4">
-        <View className="items-center mb-6">
-          <FontAwesome
+      <ScrollView style={styles.scrollContainer}>
+        <View style={styles.completedContainer}>
+          <Icon
             name="check-circle"
             size={60}
             color="#22C55E"
             style={{ marginBottom: 12 }}
           />
-          <Text className="text-xl font-bold mb-2">Hoàn thành bài test!</Text>
+          <Text style={styles.completedTitle}>Hoàn thành bài test!</Text>
           {testResult.scoreSummary && (
-            <View className="w-full">
-              <Text className="text-lg font-bold">
+            <View style={styles.scoreContainer}>
+              <Text style={styles.scoreText}>
                 Tổng điểm: {testResult.scoreSummary.total_score}/
                 {testResult.scoreSummary.total_max_score}
               </Text>
-              <Text>
+              <Text style={styles.resultText}>
                 Kết quả: {testResult.attempt.isPass ? "ĐẠT" : "KHÔNG ĐẠT"}
               </Text>
             </View>
           )}
-          <TouchableOpacity
-            onPress={onBack}
-            className="bg-blue-600 px-6 py-3 rounded-lg mt-4"
-          >
-            <Text className="text-white text-center">Quay lại bài học</Text>
+          <TouchableOpacity onPress={onBack} style={styles.backButton}>
+            <Text style={styles.buttonText}>Quay lại bài học</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -345,23 +333,23 @@ export const TestInterface: React.FC<TestInterfaceProps> = ({
     const currentAnswer = userAnswers[currentQuestion.questionDetails.id];
 
     return (
-      <ScrollView className="flex-1 p-4">
-        <View className="bg-blue-600 p-4 rounded-lg mb-4">
-          <Text className="text-white font-bold text-lg">{test.title}</Text>
-          <Text className="text-blue-100">
+      <ScrollView style={styles.scrollContainer}>
+        <View style={styles.headerContainer}>
+          <Text style={styles.headerTitle}>{test.title}</Text>
+          <Text style={styles.headerSubtitle}>
             Câu {currentQuestionIndex + 1} / {questions.length}
           </Text>
-          <Text className="text-blue-100">
+          <Text style={styles.headerSubtitle}>
             Thời gian còn lại: {formatTime(timeLeft)}
           </Text>
         </View>
 
-        <View className="mb-4">
-          <Text className="text-gray-800 font-semibold mb-2">
+        <View style={styles.questionContainer}>
+          <Text style={styles.questionTitle}>
             Câu {currentQuestion.testQuestion.questionNumber} -{" "}
             {currentQuestion.questionDetails.points} điểm
           </Text>
-          <Text className="text-gray-700 mb-4">
+          <Text style={styles.questionContent}>
             {currentQuestion.questionDetails.content}
           </Text>
 
@@ -372,7 +360,7 @@ export const TestInterface: React.FC<TestInterfaceProps> = ({
                   <Image
                     key={idx}
                     source={{ uri: att.mediaUrl }}
-                    className="w-full h-48 rounded-lg mb-4"
+                    style={styles.questionImage}
                   />
                 );
               } else if (att.mediaType.startsWith("audio/")) {
@@ -380,14 +368,14 @@ export const TestInterface: React.FC<TestInterfaceProps> = ({
                   <TouchableOpacity
                     key={idx}
                     onPress={() => handlePlayAudio(att.mediaUrl)}
-                    className="bg-blue-100 px-4 py-2 rounded-lg flex-row items-center mb-4"
+                    style={styles.audioButton}
                   >
-                    <FontAwesome
+                    <Icon
                       name={playingAudio === att.mediaUrl ? "pause" : "play"}
                       size={16}
                       color="#1E40AF"
                     />
-                    <Text className="ml-2">
+                    <Text style={styles.audioText}>
                       {playingAudio === att.mediaUrl
                         ? "Tạm dừng"
                         : "Phát audio"}
@@ -396,10 +384,7 @@ export const TestInterface: React.FC<TestInterfaceProps> = ({
                 );
               } else {
                 return (
-                  <TouchableOpacity
-                    key={idx}
-                    className="bg-gray-100 px-4 py-2 rounded-lg mb-4"
-                  >
+                  <TouchableOpacity key={idx} style={styles.fileButton}>
                     <Text>Tải file {att.mediaType}</Text>
                   </TouchableOpacity>
                 );
@@ -417,66 +402,68 @@ export const TestInterface: React.FC<TestInterfaceProps> = ({
                 choice.choiceId
               )
             }
-            className={`p-3 mb-2 rounded-lg border-2 ${
-              currentAnswer?.choiceId === choice.choiceId
-                ? "border-blue-500 bg-blue-50"
-                : "border-gray-200"
-            }`}
+            style={[
+              styles.choiceButton,
+              currentAnswer?.choiceId === choice.choiceId &&
+                styles.selectedChoice,
+            ]}
           >
-            <Text>{choice.content}</Text>
+            <Text style={styles.choiceText}>{choice.content}</Text>
           </TouchableOpacity>
         ))}
 
-        <View className="flex-row justify-between mb-6">
+        <View style={styles.navigationContainer}>
           <TouchableOpacity
             onPress={() =>
               setCurrentQuestionIndex((prev) => Math.max(prev - 1, 0))
             }
-            className="bg-gray-500 px-4 py-2 rounded-lg"
+            style={styles.navButton}
           >
-            <Text className="text-white">Câu trước</Text>
+            <Text style={styles.buttonText}>Câu trước</Text>
           </TouchableOpacity>
           {currentQuestionIndex < questions.length - 1 ? (
             <TouchableOpacity
               onPress={() => setCurrentQuestionIndex((prev) => prev + 1)}
-              className="bg-blue-600 px-4 py-2 rounded-lg"
+              style={[styles.navButton, styles.nextButton]}
             >
-              <Text className="text-white">Câu tiếp</Text>
+              <Text style={styles.buttonText}>Câu tiếp</Text>
             </TouchableOpacity>
           ) : (
             <TouchableOpacity
               onPress={() => setShowSubmitConfirm(true)}
-              className="bg-green-600 px-4 py-2 rounded-lg"
+              style={[styles.navButton, styles.submitButton]}
             >
-              <Text className="text-white">Nộp bài</Text>
+              <Text style={styles.buttonText}>Nộp bài</Text>
             </TouchableOpacity>
           )}
         </View>
 
         <Modal visible={showSubmitConfirm} transparent animationType="fade">
-          <View className="flex-1 justify-center items-center bg-black bg-opacity-50">
-            <View className="bg-white p-6 rounded-lg w-11/12">
-              <Text className="text-xl font-bold mb-4">Xác nhận nộp bài</Text>
-              <Text className="mb-2">
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <Text style={styles.modalTitle}>Xác nhận nộp bài</Text>
+              <Text style={styles.modalText}>
                 Bạn đã trả lời {getAnsweredQuestionsCount()}/{totalQuestions}{" "}
                 câu hỏi.
               </Text>
-              <Text className="mb-4">Bạn có chắc chắn muốn nộp bài?</Text>
-              <View className="flex-row justify-between">
+              <Text style={styles.modalText}>
+                Bạn có chắc chắn muốn nộp bài?
+              </Text>
+              <View style={styles.modalButtons}>
                 <TouchableOpacity
                   onPress={() => setShowSubmitConfirm(false)}
-                  className="bg-gray-500 px-4 py-2 rounded-lg"
+                  style={styles.modalButton}
                 >
-                  <Text className="text-white">Hủy</Text>
+                  <Text style={styles.buttonText}>Hủy</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={handleSubmitTest}
-                  className="bg-green-600 px-4 py-2 rounded-lg"
+                  style={[styles.modalButton, styles.submitButton]}
                 >
                   {isSubmitting ? (
                     <ActivityIndicator color="white" />
                   ) : (
-                    <Text className="text-white">Nộp bài</Text>
+                    <Text style={styles.buttonText}>Nộp bài</Text>
                   )}
                 </TouchableOpacity>
               </View>
@@ -488,9 +475,197 @@ export const TestInterface: React.FC<TestInterfaceProps> = ({
   }
 
   return (
-    <View className="flex-1 justify-center items-center p-4">
+    <View style={styles.loadingContainer}>
       <ActivityIndicator size="large" color="#3B82F6" />
-      <Text className="text-gray-600 mt-2">Đang tải bài test...</Text>
+      <Text style={styles.loadingText}>Đang tải bài test...</Text>
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 16,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  description: {
+    fontSize: 16,
+    color: "#666",
+    marginBottom: 24,
+    textAlign: "center",
+  },
+  backButton: {
+    backgroundColor: "#6B7280",
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  startButton: {
+    backgroundColor: "#2563EB",
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  buttonText: {
+    color: "white",
+    textAlign: "center",
+    fontWeight: "600",
+  },
+  scrollContainer: {
+    flex: 1,
+    padding: 16,
+  },
+  completedContainer: {
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  completedTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 8,
+  },
+  scoreContainer: {
+    width: "100%",
+  },
+  scoreText: {
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  resultText: {
+    fontSize: 16,
+  },
+  headerContainer: {
+    backgroundColor: "#2563EB",
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  headerTitle: {
+    color: "white",
+    fontWeight: "bold",
+    fontSize: 18,
+  },
+  headerSubtitle: {
+    color: "#DBEAFE",
+  },
+  questionContainer: {
+    marginBottom: 16,
+  },
+  questionTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 8,
+    color: "#1F2937",
+  },
+  questionContent: {
+    fontSize: 16,
+    color: "#374151",
+    marginBottom: 16,
+  },
+  questionImage: {
+    width: "100%",
+    height: 192,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  audioButton: {
+    backgroundColor: "#DBEAFE",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  audioText: {
+    marginLeft: 8,
+  },
+  fileButton: {
+    backgroundColor: "#F3F4F6",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  choiceButton: {
+    padding: 12,
+    marginBottom: 8,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: "#E5E7EB",
+  },
+  selectedChoice: {
+    borderColor: "#2563EB",
+    backgroundColor: "#EFF6FF",
+  },
+  choiceText: {
+    fontSize: 16,
+  },
+  navigationContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 24,
+  },
+  navButton: {
+    backgroundColor: "#6B7280",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  nextButton: {
+    backgroundColor: "#2563EB",
+  },
+  submitButton: {
+    backgroundColor: "#059669",
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.5)",
+  },
+  modalContainer: {
+    backgroundColor: "white",
+    padding: 24,
+    borderRadius: 8,
+    width: "90%",
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 16,
+  },
+  modalText: {
+    marginBottom: 8,
+  },
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 16,
+  },
+  modalButton: {
+    backgroundColor: "#6B7280",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    flex: 0.45,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 16,
+  },
+  loadingText: {
+    color: "#666",
+    marginTop: 8,
+  },
+});

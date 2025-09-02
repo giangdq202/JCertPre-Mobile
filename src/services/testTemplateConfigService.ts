@@ -31,15 +31,34 @@ export const getAllByTemplateId = async (
   templateId: string
 ): Promise<TestTemplateConfigDto[]> => {
   try {
-    const response = await axiosInstance.get(
-      GET_TEST_TEMPLATE_CONFIGS_BY_TEMPLATE_URL(templateId)
-    );
+    const url = GET_TEST_TEMPLATE_CONFIGS_BY_TEMPLATE_URL(templateId);
+
+    if (__DEV__) {
+      console.log("Fetching test template configs from:", url);
+    }
+
+    const response = await axiosInstance.get(url);
+
+    if (__DEV__) {
+      console.log("Test template configs response:", response.data);
+    }
+
     return response.data;
-  } catch (error) {
-    console.error(
-      "Failed to get test template configs for student by template ID:",
-      error
-    );
+  } catch (error: any) {
+    // console.error(
+    //   "Failed to get test template configs for student by template ID:",
+    //   error
+    // );
+    if (__DEV__) {
+      console.log(
+        "Failed to get test template configs for student by template ID:",
+        error
+      );
+      if (error.response) {
+        console.log("Response status:", error.response.status);
+        console.log("Response data:", error.response.data);
+      }
+    }
     throw error;
   }
 };
@@ -59,10 +78,10 @@ export const getByConfigId = async (
     if (error.response?.status === 404) {
       return null;
     }
-    console.error(
-      "Failed to get test template config for student by config ID:",
-      error
-    );
+    // console.error(
+    //   "Failed to get test template config for student by config ID:",
+    //   error
+    // );
     throw error;
   }
 };

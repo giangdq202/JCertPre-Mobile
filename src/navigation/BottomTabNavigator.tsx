@@ -1,7 +1,8 @@
 import React from "react";
 import { View, Animated } from "react-native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import Icon from "react-native-vector-icons/Ionicons";
+import MaterialIcon from "react-native-vector-icons/MaterialCommunityIcons";
 
 // Screens
 import HomeScreen from "../screens/home/HomeScreen";
@@ -43,7 +44,7 @@ const tabBarLabelStyle = {
 // ===== Helpers =====
 const getTabIcon = (routeName: string, focused: boolean) => {
   let iconName = "";
-  let IconComponent: any = Ionicons;
+  let IconComponent: any = Icon;
 
   switch (routeName) {
     case "Home":
@@ -53,7 +54,7 @@ const getTabIcon = (routeName: string, focused: boolean) => {
       iconName = focused ? "book" : "book-outline";
       break;
     case "Test":
-      IconComponent = MaterialCommunityIcons;
+      IconComponent = MaterialIcon;
       iconName = focused ? "file-document-edit" : "file-document-edit-outline";
       break;
     case "Schedule":

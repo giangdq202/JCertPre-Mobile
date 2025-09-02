@@ -105,7 +105,7 @@ export const VideoLessonPlayer: React.FC<VideoLessonPlayerProps> = ({
         onLoad={() => setLoading(false)}
         onPlaybackStatusUpdate={handlePlaybackStatusUpdate}
         onError={(e) => {
-          console.error("Video error:", e);
+          // console.error("Video error:", e);
           setLoading(false);
           Alert.alert("Lỗi", "Không thể phát video.");
         }}

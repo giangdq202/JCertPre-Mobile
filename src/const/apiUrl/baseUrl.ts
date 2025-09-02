@@ -1,5 +1,5 @@
-// export const BASE_URL = "https://be.zd-dev.xyz/api";
-export const BASE_URL = "http://localhost:5001/api";
+export const BASE_URL = "https://be.zd-dev.xyz/api";
+// export const BASE_URL = "http://localhost:5001/api";
 
 // ======================= AUTH =======================
 export const AUTH_BASE_URL = `${BASE_URL}/auth`;
@@ -65,17 +65,17 @@ export const GET_TEST_BY_LESSON_URL = (lessonId: string) =>
   `${TEST_BASE_URL}/by-lesson/${lessonId}`;
 export const GET_TEST_BY_ID_URL = (testId: string) =>
   `${TEST_BASE_URL}/${testId}`;
+export const AUTO_CREATE_TEST_URL = (userId: string) =>
+  `${TEST_BASE_URL}/auto-create?userId=${userId}`;
 
 // ======================= TEST QUESTIONS =======================
 export const TEST_QUESTION_BASE_URL = `${BASE_URL}/test-questions`;
 export const GET_QUESTIONS_FROM_TEST_URL = (testId: string) =>
   `${TEST_QUESTION_BASE_URL}/${testId}/questions`;
 
-// ======================= QUESTIONS & QUIZ =======================
+// ======================= QUESTIONS & CHOICES =======================
 export const QUESTION_BASE_URL = `${BASE_URL}/questions`;
-export const GET_RANDOM_QUESTIONS_URL = `${QUESTION_BASE_URL}/random`;
-export const SUB_CONTENTS_BASE_URL = `${BASE_URL}/sub-contents`;
-export const GET_SUB_CONTENTS_URL = SUB_CONTENTS_BASE_URL;
+export const CHOICE_BASE_URL = `${BASE_URL}/choices`;
 
 // ======================= TEST ATTEMPTS =======================
 export const TEST_ATTEMPT_BASE_URL = `${BASE_URL}/test-attempts`;
@@ -85,6 +85,10 @@ export const GET_TEST_ATTEMPTS_BY_USER_URL = (userId: string) =>
   `${TEST_ATTEMPT_BASE_URL}/by-user/${userId}`;
 export const GET_TEST_ATTEMPT_WITH_SCORE_URL = (attemptId: string) =>
   `${TEST_ATTEMPT_BASE_URL}/${attemptId}/with-score-summary`;
+
+// ======================= TEST TEMPLATE TYPES =======================
+export const TEST_TEMPLATE_TYPE_BASE_URL = `${BASE_URL}/test-template-types`;
+export const GET_TEST_TEMPLATE_TYPES_URL = `${TEST_TEMPLATE_TYPE_BASE_URL}`;
 
 // ======================= TEST TEMPLATES =======================
 export const TEST_TEMPLATE_BASE_URL = `${BASE_URL}/test-templates`;

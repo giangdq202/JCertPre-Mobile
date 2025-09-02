@@ -10,7 +10,7 @@ export const getAuthToken = async (): Promise<string | null> => {
     const token = await AsyncStorage.getItem(STORAGE_KEYS.ACCESS);
     return token;
   } catch (err) {
-    console.error("Lỗi lấy access token:", err);
+    // console.error("Lỗi lấy access token:", err);
     return null;
   }
 };

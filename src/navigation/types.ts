@@ -18,16 +18,38 @@ export type BottomTabParamList = {
 // ================== App Stack ==================
 export type AppStackParamList = {
   MainTabs: undefined | { screen?: keyof BottomTabParamList };
+
+  // Flashcard
   Flashcard: undefined;
-  FlashcardDetail: undefined;
-  TestDetail: { id: string };
+  FlashcardDetail: { id: string };
+
+  // Course
   CourseDetail: { course: Course };
+  LearnCourse: { courseId: string };
   Checkout: { coursePrice: number; courseId: string };
+
+  // Test
+  TestDetail: {
+    testOption: {
+      id: string;
+      title: string;
+      testType: number;
+      courseLevel: number;
+      estimatedDuration: number;
+      templates: any[];
+    };
+  };
+  TestHistory: {
+    testTemplateTypeId: string;
+    testTemplateTypeName: string;
+  };
+
+  // Profile
   ProfileDetail: undefined;
   TransactionHistory: undefined;
   Credit: undefined;
   MyCourse: undefined;
-  LearnCourse: { courseId: string };
+
   // Quiz screens
   QuizSetup: undefined;
   Quiz: undefined;
@@ -50,7 +72,7 @@ export type Course = {
 
 // Lịch sử thanh toán
 export type PaymentHistoryItem = {
-  paymentId: string; // đổi từ id -> paymentId để khớp API
+  paymentId: string;
   amount: number;
   paymentType: "Money" | "Credit";
   description?: string;
@@ -61,7 +83,7 @@ export type PaymentHistoryItem = {
 
 // Lịch sử giao dịch Credit
 export type CreditTransactionItem = {
-  transactionId: string; // đổi từ id -> transactionId
+  transactionId: string;
   amount: number;
   type: "topup" | "spend";
   description?: string;

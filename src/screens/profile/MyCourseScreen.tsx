@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "react-native-vector-icons/Ionicons";
 import { LinearGradient } from "expo-linear-gradient";
 import {
   AppStackParamList,
@@ -21,6 +21,7 @@ import {
 import { getMyEnrollments } from "../../services/enrollmentService";
 import { getCourseById } from "../../services/courseService";
 import { useAuth } from "../../auth/AuthContext";
+import SearchBar from "../../components/SearchBar";
 import colors from "../../styles/colors";
 
 type NavigationProp = NativeStackNavigationProp<AppStackParamList, "MainTabs">;
@@ -56,7 +57,7 @@ const MyCourseScreen: React.FC = () => {
                 price: courseData.price ?? 0,
               };
             } catch (err) {
-              console.error(err);
+              // console.error(err);
               return {
                 courseId: enrollment.courseId,
                 title: enrollment.courseTitle || "Khóa học không tên",
@@ -72,7 +73,7 @@ const MyCourseScreen: React.FC = () => {
         );
         setCourses(courseList);
       } catch (err) {
-        console.error(err);
+        // console.error(err);
         setError("Không thể tải danh sách khóa học");
       } finally {
         setLoading(false);
@@ -191,12 +192,10 @@ const MyCourseScreen: React.FC = () => {
       </LinearGradient>
 
       <View style={{ flex: 1, padding: 16 }}>
-        <TextInput
-          style={styles.search}
-          placeholder="Tìm khóa học..."
+        <SearchBar
           value={searchTerm}
           onChangeText={setSearchTerm}
-          placeholderTextColor={colors.gray}
+          placeholder="Tìm khóa học..."
         />
 
         <View style={styles.filterRow}>

@@ -45,6 +45,16 @@ axiosInstance.interceptors.response.use(
     const isAuthRefreshEndpoint =
       originalConfig.url?.includes(REFRESH_TOKEN_URL);
 
+    // Ngăn chặn popup lỗi cho các lỗi đã được xử lý
+    if (
+      error.response?.status === 400 ||
+      error.response?.status === 409 ||
+      error.response?.status === 404
+    ) {
+      // Đánh dấu lỗi đã được xử lý để không hiển thị popup
+      error._handled = true;
+    }
+
     if (
       error.response?.status === 401 &&
       !originalConfig._retry &&

@@ -14,6 +14,10 @@ import FlashcardDetailScreen from "../screens/flashcard/FlashcardDetailScreen";
 import CourseDetailScreen from "../screens/course/CourseDetailScreen";
 import LearnCourseScreen from "../screens/course/LearnCourseScreen";
 
+// Test
+import TestDetailScreen from "../screens/test/TestDetailScreen";
+import TestHistoryScreen from "../screens/test/TestHistoryScreen";
+
 // Profile
 import ProfileDetailScreen from "../screens/profile/ProfileDetailScreen";
 import PaymentHistoryScreen from "../screens/profile/PaymentHistoryScreen";
@@ -45,6 +49,10 @@ const AppStack = () => {
       <Stack.Screen name="CourseDetail" component={CourseDetailScreen} />
       <Stack.Screen name="LearnCourse" component={LearnCourseScreen} />
 
+      {/* Test */}
+      <Stack.Screen name="TestDetail" component={TestDetailScreen} />
+      <Stack.Screen name="TestHistory" component={TestHistoryScreen} />
+      
       {/* Profile */}
       <Stack.Screen
         name="ProfileDetail"

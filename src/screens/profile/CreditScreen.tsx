@@ -11,7 +11,7 @@ import {
   Linking,
   ImageBackground,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "react-native-vector-icons/Ionicons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useAuth } from "../../auth/AuthContext";
 import { createStudentCreditPurchase } from "../../services/paymentService";
@@ -55,11 +55,53 @@ const CreditScreen = () => {
         Alert.alert("Thông báo", "Không lấy được đường dẫn thanh toán");
       }
     } catch (err: any) {
-      console.error(err);
-      Alert.alert(
-        "Lỗi",
-        err?.response?.data?.message || "Có lỗi xảy ra khi tạo đơn hàng"
-      );
+      // console.error(err);
+
+      // Xử lý lỗi cụ thể
+      if (err?.response?.status === 400) {
+        const errorMessage = err.response.data?.message || "";
+        const errorCode = err.response.data?.errorCode || "";
+
+        if (
+          errorCode === "INVALID_AMOUNT" ||
+          errorMessage.toLowerCase().includes("amount")
+        ) {
+          Alert.alert(
+            "Lỗi",
+            "Số lượng credit không hợp lệ. Vui lòng nhập số lượng từ 1 đến 1,000,000."
+          );
+        } else if (errorCode === "USER_NOT_FOUND") {
+          Alert.alert(
+            "Lỗi",
+            "Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại."
+          );
+        } else {
+          Alert.alert(
+            "Lỗi",
+            errorMessage || "Thông tin không hợp lệ. Vui lòng kiểm tra lại."
+          );
+        }
+      } else if (err?.response?.status === 401) {
+        Alert.alert(
+          "Lỗi xác thực",
+          "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."
+        );
+      } else if (err?.response?.status === 500) {
+        Alert.alert(
+          "Lỗi hệ thống",
+          "Có lỗi xảy ra từ hệ thống. Vui lòng thử lại sau."
+        );
+      } else {
+        // Lỗi mạng hoặc lỗi khác
+        const errorMessage =
+          err?.response?.data?.message ||
+          err?.message ||
+          "Có lỗi xảy ra khi tạo đơn hàng";
+        Alert.alert("Lỗi", errorMessage);
+      }
+
+      // Không throw lại error để tránh popup mặc định của React Native
+      return;
     } finally {
       setIsLoading(false);
     }
