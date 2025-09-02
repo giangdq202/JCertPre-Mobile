@@ -16,6 +16,8 @@ import { Audio } from "expo-av";
 import Icon from "react-native-vector-icons/Feather";
 import FontAwesome from "react-native-vector-icons/FontAwesome";
 
+const { width: screenWidth } = Dimensions.get("window");
+
 import { useAuth } from "../../auth/AuthContext";
 import {
   TestType,
@@ -41,8 +43,6 @@ import {
   updateStudentLevel,
   getStudentProfile,
 } from "../../services/studentProfileService";
-
-const { width: screenWidth } = Dimensions.get("window");
 
 type RootStackParamList = {
   TestDetail: {
@@ -111,6 +111,68 @@ const TestDetailScreen: React.FC = () => {
   const [playingAudio, setPlayingAudio] = useState<string | null>(null);
   const audioRefs = useRef<Record<string, Audio.Sound>>({});
 
+  // Mock question data for fallback mode
+  const mockQuestionData = useRef<Map<string, QuestionWithChoices>>(new Map());
+
+  // Create mock questions for fallback mode
+  const createMockQuestions = (
+    testId: string,
+    courseLevel: CourseLevel
+  ): TestQuestionDto[] => {
+    const mockQuestions: TestQuestionDto[] = [];
+    const levelName = CourseLevel[courseLevel];
+
+    // Create 5 mock questions for demonstration
+    for (let i = 1; i <= 5; i++) {
+      const questionId = `mock_${testId}_q${i}`;
+
+      // Create TestQuestionDto
+      mockQuestions.push({
+        testQuestionId: `mock_test_question_${testId}_${i}`,
+        testId: testId,
+        questionId: questionId,
+        questionNumber: i,
+        partNumber: 1,
+        partDurationMinutes: 30,
+      });
+
+      // Create mock question data
+      const mockQuestion: QuestionWithChoices = {
+        id: questionId,
+        content: `Câu hỏi mẫu ${i} - JLPT ${levelName}\n\nĐây là câu hỏi mẫu để demo chức năng làm bài thi. Hãy chọn đáp án đúng nhất.`,
+        points: 1,
+        choices: [
+          {
+            id: `mock_${testId}_q${i}_a`,
+            content: "Đáp án A - Lựa chọn đầu tiên",
+            isCorrect: i === 1, // First question has A as correct
+          },
+          {
+            id: `mock_${testId}_q${i}_b`,
+            content: "Đáp án B - Lựa chọn thứ hai",
+            isCorrect: i === 2, // Second question has B as correct
+          },
+          {
+            id: `mock_${testId}_q${i}_c`,
+            content: "Đáp án C - Lựa chọn thứ ba",
+            isCorrect: i === 3, // Third question has C as correct
+          },
+          {
+            id: `mock_${testId}_q${i}_d`,
+            content: "Đáp án D - Lựa chọn cuối cùng",
+            isCorrect: i === 4 || i === 5, // Fourth and fifth questions have D as correct
+          },
+        ],
+        questionAttachments: [],
+      };
+
+      // Store mock question data
+      mockQuestionData.current.set(questionId, mockQuestion);
+    }
+
+    return mockQuestions;
+  };
+
   // Group questions by parts
   const groupQuestionsByParts = (questions: TestQuestionDto[]): TestPart[] => {
     console.log("Raw questions from API:", questions);
@@ -149,6 +211,17 @@ const TestDetailScreen: React.FC = () => {
   // Load question details
   const loadQuestion = async (questionId: string) => {
     try {
+      // Check if this is a mock question
+      if (questionId.startsWith("mock_")) {
+        // Find the mock question data
+        const mockQuestion = mockQuestionData.current.get(questionId);
+        if (mockQuestion) {
+          setCurrentQuestion(mockQuestion);
+          return;
+        }
+      }
+
+      // Load real question from API
       const questionDetail = await getQuestionById(questionId);
       const convertedQuestion: QuestionWithChoices = {
         ...questionDetail,
@@ -248,38 +321,63 @@ const TestDetailScreen: React.FC = () => {
       console.log("TestOption templates:", testOption.templates);
 
       let createdTestResult;
-      try {
-        createdTestResult = await createAutoTest(autoTestInput, userInfo.id);
-      } catch (createError: any) {
+
+      // Check if this is a fallback test option (no templates)
+      if (!testOption.templates || testOption.templates.length === 0) {
         console.log(
-          "Auto test creation failed, trying template approach:",
-          createError
+          "Fallback test option detected, creating basic test structure"
         );
+        createdTestResult = {
+          testId: `fallback_${testOption.testType}_${
+            testOption.courseLevel
+          }_${Date.now()}`,
+          title: testOption.title,
+          description: `Bài thi ${testOption.title} cơ bản (chế độ fallback)`,
+        };
+      } else {
+        try {
+          createdTestResult = await createAutoTest(autoTestInput, userInfo.id);
+        } catch (createError: any) {
+          console.log(
+            "Auto test creation failed, trying template approach:",
+            createError
+          );
 
-        // If auto-create fails, try using the first available template
-        if (testOption.templates && testOption.templates.length > 0) {
-          const firstTemplate = testOption.templates[0];
-          console.log("Using template fallback:", firstTemplate);
+          // If auto-create fails, try using the first available template
+          if (testOption.templates && testOption.templates.length > 0) {
+            const firstTemplate = testOption.templates[0];
+            console.log("Using template fallback:", firstTemplate);
 
-          try {
-            createdTestResult = await createTestFromTemplate(
-              firstTemplate.templateId,
-              userInfo.id,
-              testOption.testType,
-              testOption.courseLevel
+            try {
+              createdTestResult = await createTestFromTemplate(
+                firstTemplate.templateId,
+                userInfo.id,
+                testOption.testType,
+                testOption.courseLevel
+              );
+            } catch (templateError: any) {
+              console.log("Template approach also failed:", templateError);
+
+              // Create a mock test result as last resort
+              createdTestResult = {
+                testId: `template_${firstTemplate.templateId}_${Date.now()}`,
+                title: testOption.title,
+                description: `Bài thi ${testOption.title} được tạo từ template`,
+              };
+            }
+          } else {
+            // If no templates available, create a basic test structure
+            console.log(
+              "No templates available, creating basic test structure"
             );
-          } catch (templateError: any) {
-            console.log("Template approach also failed:", templateError);
-
-            // Create a mock test result as last resort
             createdTestResult = {
-              testId: `template_${firstTemplate.templateId}_${Date.now()}`,
+              testId: `basic_${testOption.testType}_${
+                testOption.courseLevel
+              }_${Date.now()}`,
               title: testOption.title,
-              description: `Bài thi ${testOption.title} được tạo từ template`,
+              description: `Bài thi ${testOption.title} cơ bản`,
             };
           }
-        } else {
-          throw createError;
         }
       }
 
@@ -302,15 +400,55 @@ const TestDetailScreen: React.FC = () => {
       setTest(createdTest);
 
       // Step 2: Start test attempt
-      const attempt = await startTestAttempt({
-        testId: createdTest.testId,
-        userId: userInfo.id,
-      });
-      setTestAttempt(attempt);
+      let attempt: TestAttemptDto;
+
+      // Check if this is a fallback test - skip API call
+      if (createdTest.testId.startsWith("fallback_")) {
+        console.log("Fallback test detected, creating mock test attempt");
+        attempt = {
+          attemptId: `mock_attempt_${createdTest.testId}_${Date.now()}`,
+          testId: createdTest.testId,
+          userId: userInfo.id,
+          attemptNumber: 1,
+          startTime: new Date().toISOString(),
+          endTime: "",
+          isPass: false,
+          status: 0, // In progress
+        };
+        setTestAttempt(attempt);
+      } else {
+        try {
+          attempt = await startTestAttempt({
+            testId: createdTest.testId,
+            userId: userInfo.id,
+          });
+          setTestAttempt(attempt);
+        } catch (attemptError: any) {
+          console.log("Failed to start test attempt:", attemptError);
+          throw attemptError;
+        }
+      }
 
       // Step 3: Get all test questions
-      const questions = await getQuestionsByTestId(createdTest.testId);
-      setTestQuestions(questions);
+      let questions: TestQuestionDto[] = [];
+
+      // Check if this is a fallback test - skip API call
+      if (createdTest.testId.startsWith("fallback_")) {
+        console.log("Fallback test detected, creating mock questions");
+        questions = createMockQuestions(
+          createdTest.testId,
+          testOption.courseLevel
+        );
+        setTestQuestions(questions);
+      } else {
+        try {
+          questions = await getQuestionsByTestId(createdTest.testId);
+          setTestQuestions(questions);
+        } catch (questionError: any) {
+          console.log("Failed to get test questions:", questionError);
+          throw questionError;
+        }
+      }
 
       // Step 4: Group questions by parts
       const parts = groupQuestionsByParts(questions);
@@ -460,6 +598,12 @@ const TestDetailScreen: React.FC = () => {
     setUserAnswers(newAnswers);
 
     try {
+      // Skip API call for mock attempts
+      if (testAttempt.attemptId.startsWith("mock_attempt_")) {
+        console.log("Mock attempt - skipping answer submission to API");
+        return;
+      }
+
       await addOrUpdateAttemptAnswer({
         attemptId: testAttempt.attemptId,
         questionId: questionId,
@@ -476,6 +620,67 @@ const TestDetailScreen: React.FC = () => {
 
     setSubmitting(true);
     try {
+      // Handle mock attempt submission
+      if (testAttempt.attemptId.startsWith("mock_attempt_")) {
+        console.log("Submitting mock test attempt");
+
+        // Calculate mock score
+        let correctAnswers = 0;
+        let totalQuestions = testQuestions.length;
+
+        userAnswers.forEach((choiceId, questionId) => {
+          const mockQuestion = mockQuestionData.current.get(questionId);
+          if (mockQuestion) {
+            const correctChoice = mockQuestion.choices?.find(
+              (c) => c.isCorrect
+            );
+            if (correctChoice && correctChoice.id === choiceId) {
+              correctAnswers++;
+            }
+          }
+        });
+
+        const mockResult: TestAttemptWithScoreSummary = {
+          attempt: {
+            ...testAttempt,
+            endTime: new Date().toISOString(),
+            isPass: correctAnswers >= Math.ceil(totalQuestions * 0.6), // 60% to pass
+            status: 1, // Completed
+          },
+          scoreSummary: {
+            testScoreSummaryId: `mock_score_${testAttempt.attemptId}`,
+            testId: testAttempt.testId,
+            testAttemptId: testAttempt.attemptId,
+            kanji_score: Math.floor(correctAnswers * 0.2),
+            vocab_score: Math.floor(correctAnswers * 0.2),
+            grammar_score: Math.floor(correctAnswers * 0.2),
+            reading_score: Math.floor(correctAnswers * 0.2),
+            listening_score: Math.floor(correctAnswers * 0.2),
+            kanji_max_score: Math.floor(totalQuestions * 0.2),
+            vocab_max_score: Math.floor(totalQuestions * 0.2),
+            grammar_max_score: Math.floor(totalQuestions * 0.2),
+            reading_max_score: Math.floor(totalQuestions * 0.2),
+            listening_max_score: Math.floor(totalQuestions * 0.2),
+            total_score: correctAnswers,
+            total_max_score: totalQuestions,
+            percentage_score: Math.round(
+              (correctAnswers / totalQuestions) * 100
+            ),
+            passing_percentage: 60,
+          },
+        };
+
+        setTestResult(mockResult);
+        setShowResult(true);
+
+        Alert.alert(
+          "Nộp bài thành công",
+          "Bài thi mẫu đã được hoàn thành. Đây là chế độ demo."
+        );
+        return;
+      }
+
+      // Handle real test submission
       await submitTestAttempt({ attemptId: testAttempt.attemptId });
 
       const result = await getTestAttemptWithScoreSummary(
@@ -501,6 +706,67 @@ const TestDetailScreen: React.FC = () => {
   const handleAutoSubmit = useCallback(async () => {
     if (testAttempt && !submitting) {
       try {
+        // Handle mock attempt auto submission
+        if (testAttempt.attemptId.startsWith("mock_attempt_")) {
+          console.log("Auto submitting mock test attempt");
+
+          // Calculate mock score
+          let correctAnswers = 0;
+          let totalQuestions = testQuestions.length;
+
+          userAnswers.forEach((choiceId, questionId) => {
+            const mockQuestion = mockQuestionData.current.get(questionId);
+            if (mockQuestion) {
+              const correctChoice = mockQuestion.choices?.find(
+                (c) => c.isCorrect
+              );
+              if (correctChoice && correctChoice.id === choiceId) {
+                correctAnswers++;
+              }
+            }
+          });
+
+          const mockResult: TestAttemptWithScoreSummary = {
+            attempt: {
+              ...testAttempt,
+              endTime: new Date().toISOString(),
+              isPass: correctAnswers >= Math.ceil(totalQuestions * 0.6), // 60% to pass
+              status: 1, // Completed
+            },
+            scoreSummary: {
+              testScoreSummaryId: `mock_score_${testAttempt.attemptId}`,
+              testId: testAttempt.testId,
+              testAttemptId: testAttempt.attemptId,
+              kanji_score: Math.floor(correctAnswers * 0.2),
+              vocab_score: Math.floor(correctAnswers * 0.2),
+              grammar_score: Math.floor(correctAnswers * 0.2),
+              reading_score: Math.floor(correctAnswers * 0.2),
+              listening_score: Math.floor(correctAnswers * 0.2),
+              kanji_max_score: Math.floor(totalQuestions * 0.2),
+              vocab_max_score: Math.floor(totalQuestions * 0.2),
+              grammar_max_score: Math.floor(totalQuestions * 0.2),
+              reading_max_score: Math.floor(totalQuestions * 0.2),
+              listening_max_score: Math.floor(totalQuestions * 0.2),
+              total_score: correctAnswers,
+              total_max_score: totalQuestions,
+              percentage_score: Math.round(
+                (correctAnswers / totalQuestions) * 100
+              ),
+              passing_percentage: 60,
+            },
+          };
+
+          setTestResult(mockResult);
+          setShowResult(true);
+
+          Alert.alert(
+            "Hết thời gian",
+            "Bài thi mẫu đã được tự động nộp. Đây là chế độ demo."
+          );
+          return;
+        }
+
+        // Handle real test auto submission
         await submitTestAttempt({ attemptId: testAttempt.attemptId });
 
         const result = await getTestAttemptWithScoreSummary(
@@ -516,7 +782,7 @@ const TestDetailScreen: React.FC = () => {
         Alert.alert("Lỗi tự động nộp bài", "Không thể tự động nộp bài thi");
       }
     }
-  }, [testAttempt, submitting]);
+  }, [testAttempt, submitting, userAnswers, testQuestions]);
 
   // Format time display
   const formatTime = (seconds: number) => {
@@ -548,18 +814,62 @@ const TestDetailScreen: React.FC = () => {
 
   // Show test result if available
   if (showResult && testResult) {
+    const percentage =
+      testResult.scoreSummary.total_max_score > 0
+        ? Math.round(
+            (testResult.scoreSummary.total_score /
+              testResult.scoreSummary.total_max_score) *
+              100
+          )
+        : 0;
+
     return (
       <View style={styles.container}>
-        <ScrollView style={styles.resultContainer}>
-          <Text style={styles.resultTitle}>Kết quả bài thi</Text>
-          <Text style={styles.resultSubtitle}>{test?.title}</Text>
+        <View style={styles.resultHeader}>
+          <TouchableOpacity
+            style={styles.resultBackButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Icon name="arrow-left" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+          <Text style={styles.resultHeaderTitle}>Kết quả bài thi</Text>
+        </View>
 
+        <ScrollView
+          style={styles.resultContainer}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Test Info Card */}
+          <View style={styles.testInfoCard}>
+            <View style={styles.testInfoHeader}>
+              <Icon name="award" size={24} color="#3B82F6" />
+              <Text style={styles.testInfoTitle}>{test?.title}</Text>
+            </View>
+            <Text style={styles.testInfoSubtitle}>
+              Hoàn thành lúc{" "}
+              {new Date(
+                testResult.attempt.endTime || Date.now()
+              ).toLocaleString("vi-VN")}
+            </Text>
+          </View>
+
+          {/* Result Status Card */}
           <View
             style={[
-              styles.resultStatus,
-              testResult.attempt.isPass ? styles.passStatus : styles.failStatus,
+              styles.resultStatusCard,
+              testResult.attempt.isPass
+                ? styles.passStatusCard
+                : styles.failStatusCard,
             ]}
           >
+            <View style={styles.resultIconContainer}>
+              <Icon
+                name={testResult.attempt.isPass ? "check-circle" : "x-circle"}
+                size={48}
+                color={testResult.attempt.isPass ? "#10B981" : "#EF4444"}
+              />
+            </View>
+
             <Text
               style={[
                 styles.resultStatusText,
@@ -568,36 +878,72 @@ const TestDetailScreen: React.FC = () => {
             >
               {testResult.attempt.isPass ? "ĐẠT" : "KHÔNG ĐẠT"}
             </Text>
-            <Text style={styles.resultScore}>
-              Tổng điểm: {testResult.scoreSummary.total_score}/
-              {testResult.scoreSummary.total_max_score}(
-              {testResult.scoreSummary.total_max_score > 0
-                ? Math.round(
-                    (testResult.scoreSummary.total_score /
-                      testResult.scoreSummary.total_max_score) *
-                      100
-                  )
-                : 0}
-              %)
+
+            <Text style={styles.resultStatusSubtext}>
+              {testResult.attempt.isPass
+                ? "Chúc mừng! Bạn đã vượt qua bài thi"
+                : "Hãy cố gắng hơn nữa trong lần tiếp theo"}
             </Text>
           </View>
 
+          {/* Score Details Card */}
+          <View style={styles.scoreCard}>
+            <Text style={styles.scoreCardTitle}>Chi tiết điểm số</Text>
+
+            <View style={styles.scoreRow}>
+              <View style={styles.scoreItem}>
+                <Text style={styles.scoreLabel}>Điểm đạt được</Text>
+                <Text style={styles.scoreValue}>
+                  {testResult.scoreSummary.total_score}
+                </Text>
+              </View>
+              <View style={styles.scoreDivider} />
+              <View style={styles.scoreItem}>
+                <Text style={styles.scoreLabel}>Tổng điểm</Text>
+                <Text style={styles.scoreValue}>
+                  {testResult.scoreSummary.total_max_score}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.percentageContainer}>
+              <View style={styles.percentageBar}>
+                <View
+                  style={[
+                    styles.percentageFill,
+                    {
+                      width: `${percentage}%`,
+                      backgroundColor: testResult.attempt.isPass
+                        ? "#10B981"
+                        : "#EF4444",
+                    },
+                  ]}
+                />
+              </View>
+              <Text style={styles.percentageText}>{percentage}%</Text>
+            </View>
+          </View>
+
+          {/* Action Buttons */}
           <View style={styles.resultActions}>
             <TouchableOpacity
-              style={styles.backButton}
+              style={styles.primaryActionButton}
               onPress={() => navigation.goBack()}
             >
-              <Text style={styles.backButtonText}>Quay lại trang chủ</Text>
+              <Icon name="home" size={20} color="#FFFFFF" />
+              <Text style={styles.primaryActionText}>Về trang chủ</Text>
             </TouchableOpacity>
+
             <TouchableOpacity
-              style={styles.retryButton}
+              style={styles.secondaryActionButton}
               onPress={() => {
                 setShowResult(false);
                 setTestResult(null);
                 initializeTest();
               }}
             >
-              <Text style={styles.retryButtonText}>Làm bài thi khác</Text>
+              <Icon name="refresh-cw" size={20} color="#3B82F6" />
+              <Text style={styles.secondaryActionText}>Làm bài khác</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -625,36 +971,31 @@ const TestDetailScreen: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      {/* Header with timer */}
+      {/* Modern Header */}
       <View style={styles.header}>
-        <View style={styles.headerContent}>
+        <View style={styles.headerTop}>
           <View style={styles.headerLeft}>
-            <Text style={styles.testTitle}>{test.title}</Text>
-            <Text style={styles.testSubtitle}>
-              Part {currentPart?.partNumber} - Câu{" "}
-              {currentTestQuestion?.questionNumber}
-            </Text>
-          </View>
-
-          <View style={styles.timerContainer}>
-            {/* Part Timer */}
-            <View style={styles.timerItem}>
-              <Text style={styles.timerLabel}>
-                Part {currentPart?.partNumber}
-              </Text>
-              <Text
-                style={[
-                  styles.timerValue,
-                  partTimeLeft < 300 && styles.timerWarning,
-                ]}
-              >
-                {formatTime(partTimeLeft)}
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}
+            >
+              <Icon name="arrow-left" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+            <View style={styles.headerInfo}>
+              <Text style={styles.testTitle}>{test.title}</Text>
+              <Text style={styles.testSubtitle}>
+                Part {currentPart?.partNumber} • Câu{" "}
+                {currentTestQuestion?.questionNumber}
               </Text>
             </View>
+          </View>
 
-            {/* Total Timer */}
-            <View style={styles.timerItem}>
-              <Text style={styles.timerLabel}>Tổng</Text>
+          <View style={styles.timerSection}>
+            <View style={styles.timerCard}>
+              <View style={styles.timerHeader}>
+                <Icon name="clock" size={16} color="#EF4444" />
+                <Text style={styles.timerLabel}>Thời gian còn lại</Text>
+              </View>
               <Text
                 style={[
                   styles.timerValue,
@@ -666,253 +1007,309 @@ const TestDetailScreen: React.FC = () => {
             </View>
           </View>
         </View>
+
+        {/* Progress Bar */}
+        <View style={styles.progressBarContainer}>
+          <View style={styles.progressBar}>
+            <View
+              style={[
+                styles.progressFill,
+                {
+                  width: `${(userAnswers.size / testQuestions.length) * 100}%`,
+                },
+              ]}
+            />
+          </View>
+          <Text style={styles.progressText}>
+            {userAnswers.size}/{testQuestions.length} câu đã trả lời
+          </Text>
+        </View>
       </View>
 
       <View style={styles.mainContent}>
-        {/* Question Content */}
-        <View style={styles.questionContainer}>
-          <View style={styles.questionHeader}>
-            <View style={styles.questionBadge}>
-              <Text style={styles.questionBadgeText}>
-                Câu {currentTestQuestion?.questionNumber}
-              </Text>
-            </View>
-            <Text style={styles.questionPoints}>
-              {currentQuestion?.points || 0} điểm
-            </Text>
+        {/* Question List Section */}
+        <View style={styles.questionListSection}>
+          <View style={styles.questionListHeader}>
+            <Icon name="list" size={20} color="#3B82F6" />
+            <Text style={styles.questionListTitle}>Danh sách câu hỏi</Text>
           </View>
 
-          <ScrollView style={styles.questionContent}>
-            <Text style={styles.questionText}>{currentQuestion?.content}</Text>
-
-            {/* Question attachments - Audio support */}
-            {currentQuestion?.questionAttachments &&
-              currentQuestion.questionAttachments.length > 0 && (
-                <View style={styles.attachmentsContainer}>
-                  {currentQuestion.questionAttachments.map(
-                    (attachment, index) => (
-                      <View key={index} style={styles.attachmentItem}>
-                        {attachment.mediaType.startsWith("image/") ? (
-                          <Image
-                            source={{ uri: attachment.mediaUrl }}
-                            style={styles.attachmentImage}
-                            resizeMode="contain"
-                          />
-                        ) : attachment.mediaType.startsWith("audio/") ? (
-                          <View style={styles.audioContainer}>
-                            <TouchableOpacity
-                              style={styles.audioButton}
-                              onPress={() =>
-                                handlePlayAudio(attachment.mediaUrl)
-                              }
-                            >
-                              <Icon
-                                name={
-                                  playingAudio === attachment.mediaUrl
-                                    ? "pause"
-                                    : "play"
-                                }
-                                size={20}
-                                color="#FFFFFF"
-                              />
-                            </TouchableOpacity>
-                            <Text style={styles.audioText}>Audio câu hỏi</Text>
-                          </View>
-                        ) : (
-                          <TouchableOpacity style={styles.documentButton}>
-                            <FontAwesome
-                              name="file-text-o"
-                              size={20}
-                              color="#3B82F6"
-                            />
-                            <Text style={styles.documentText}>
-                              Tài liệu đính kèm
-                            </Text>
-                          </TouchableOpacity>
-                        )}
-                      </View>
-                    )
-                  )}
+          <ScrollView
+            style={styles.questionListContainer}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+          >
+            {testParts.map((part, partIndex) => (
+              <View key={part.partNumber} style={styles.partSection}>
+                <View style={styles.partHeader}>
+                  <Text
+                    style={[
+                      styles.partTitle,
+                      partIndex === currentPartIndex
+                        ? styles.currentPartTitle
+                        : partIndex < currentPartIndex
+                        ? styles.completedPartTitle
+                        : styles.futurePartTitle,
+                    ]}
+                  >
+                    Part {part.partNumber}
+                  </Text>
+                  <Text style={styles.partDuration}>
+                    {part.durationMinutes} phút
+                  </Text>
                 </View>
-              )}
+
+                <View style={styles.questionsGrid}>
+                  {part.questions.map((question, questionIndex) => {
+                    const isAnswered = userAnswers.has(question.questionId);
+                    const isCurrent =
+                      partIndex === currentPartIndex &&
+                      questionIndex === currentQuestionIndex;
+                    const canAccess = partIndex >= currentPartIndex;
+
+                    return (
+                      <TouchableOpacity
+                        key={`${part.partNumber}_${question.questionNumber}_${questionIndex}`}
+                        style={[
+                          styles.questionButton,
+                          isCurrent && styles.currentQuestion,
+                          isAnswered && styles.answeredQuestion,
+                          !canAccess && styles.lockedQuestion,
+                        ]}
+                        onPress={() =>
+                          navigateToQuestion(partIndex, questionIndex)
+                        }
+                        disabled={!canAccess}
+                      >
+                        <Text
+                          style={[
+                            styles.questionButtonText,
+                            isCurrent && styles.currentQuestionText,
+                            isAnswered && styles.answeredQuestionText,
+                            !canAccess && styles.lockedQuestionText,
+                          ]}
+                        >
+                          {question.questionNumber}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            ))}
           </ScrollView>
         </View>
 
-        {/* Answer Choices */}
-        <View style={styles.answersContainer}>
-          <Text style={styles.answersTitle}>Chọn đáp án:</Text>
-          <ScrollView style={styles.answersList}>
-            {currentQuestion?.choices?.map((choice, index) => {
-              const isSelected =
-                userAnswers.get(currentQuestion.id) === choice.id;
-              const letter = String.fromCharCode(65 + index); // A, B, C, D
-
-              return (
-                <TouchableOpacity
-                  key={choice.id}
-                  style={[
-                    styles.choiceButton,
-                    isSelected && styles.selectedChoice,
-                  ]}
-                  onPress={() => handleAnswerSelect(choice.id)}
-                >
-                  <View style={styles.choiceContent}>
-                    <View
-                      style={[
-                        styles.choiceLetter,
-                        isSelected && styles.selectedChoiceLetter,
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.choiceLetterText,
-                          isSelected && styles.selectedChoiceLetterText,
-                        ]}
-                      >
-                        {letter}
-                      </Text>
-                    </View>
-                    <Text
-                      style={[
-                        styles.choiceText,
-                        isSelected && styles.selectedChoiceText,
-                      ]}
-                    >
-                      {choice.content}
+        {/* Question Content Section */}
+        <View style={styles.questionContentSection}>
+          <ScrollView
+            style={styles.questionScrollView}
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Question Card */}
+            <View style={styles.questionCard}>
+              <View style={styles.questionHeader}>
+                <View style={styles.questionBadge}>
+                  <Text style={styles.questionBadgeText}>
+                    Câu {currentTestQuestion?.questionNumber}
+                  </Text>
+                </View>
+                <View style={styles.questionMeta}>
+                  <View style={styles.pointsBadge}>
+                    <Icon name="star" size={14} color="#F59E0B" />
+                    <Text style={styles.pointsText}>
+                      {currentQuestion?.points || 0} điểm
                     </Text>
                   </View>
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
-        </View>
+                </View>
+              </View>
 
-        {/* Navigation */}
-        <View style={styles.navigationContainer}>
-          <TouchableOpacity
-            style={[
-              styles.navButton,
-              currentPartIndex === 0 &&
-                currentQuestionIndex === 0 &&
-                styles.disabledButton,
-            ]}
-            onPress={() => {
-              if (currentQuestionIndex > 0) {
-                navigateToQuestion(currentPartIndex, currentQuestionIndex - 1);
-              } else if (currentPartIndex > 0) {
-                const prevPart = testParts[currentPartIndex - 1];
-                navigateToQuestion(
-                  currentPartIndex - 1,
-                  prevPart.questions.length - 1
-                );
-              }
-            }}
-            disabled={currentPartIndex === 0 && currentQuestionIndex === 0}
-          >
-            <Icon name="chevron-left" size={20} color="#6B7280" />
-            <Text style={styles.navButtonText}>Câu trước</Text>
-          </TouchableOpacity>
+              <View style={styles.questionContent}>
+                <Text style={styles.questionText}>
+                  {currentQuestion?.content}
+                </Text>
 
-          <View style={styles.progressInfo}>
-            <Text style={styles.progressText}>
-              {userAnswers.size} / {testQuestions.length} câu đã trả lời
-            </Text>
-          </View>
+                {/* Question Attachments */}
+                {currentQuestion?.questionAttachments &&
+                  currentQuestion.questionAttachments.length > 0 && (
+                    <View style={styles.attachmentsContainer}>
+                      {currentQuestion.questionAttachments.map(
+                        (attachment, index) => (
+                          <View key={index} style={styles.attachmentItem}>
+                            {attachment.mediaType.startsWith("image/") ? (
+                              <Image
+                                source={{ uri: attachment.mediaUrl }}
+                                style={styles.attachmentImage}
+                                resizeMode="contain"
+                              />
+                            ) : attachment.mediaType.startsWith("audio/") ? (
+                              <View style={styles.audioContainer}>
+                                <TouchableOpacity
+                                  style={styles.audioButton}
+                                  onPress={() =>
+                                    handlePlayAudio(attachment.mediaUrl)
+                                  }
+                                >
+                                  <Icon
+                                    name={
+                                      playingAudio === attachment.mediaUrl
+                                        ? "pause"
+                                        : "play"
+                                    }
+                                    size={20}
+                                    color="#FFFFFF"
+                                  />
+                                </TouchableOpacity>
+                                <Text style={styles.audioText}>
+                                  Audio câu hỏi
+                                </Text>
+                              </View>
+                            ) : (
+                              <TouchableOpacity style={styles.documentButton}>
+                                <FontAwesome
+                                  name="file-text-o"
+                                  size={20}
+                                  color="#3B82F6"
+                                />
+                                <Text style={styles.documentText}>
+                                  Tài liệu đính kèm
+                                </Text>
+                              </TouchableOpacity>
+                            )}
+                          </View>
+                        )
+                      )}
+                    </View>
+                  )}
+              </View>
+            </View>
 
-          <TouchableOpacity
-            style={[
-              styles.navButton,
-              currentPartIndex === testParts.length - 1 &&
-                currentQuestionIndex === currentPart.questions.length - 1 &&
-                styles.disabledButton,
-            ]}
-            onPress={() => {
-              const currentPartQuestions = currentPart.questions;
-              if (currentQuestionIndex < currentPartQuestions.length - 1) {
-                navigateToQuestion(currentPartIndex, currentQuestionIndex + 1);
-              } else if (currentPartIndex < testParts.length - 1) {
-                navigateToQuestion(currentPartIndex + 1, 0);
-              }
-            }}
-            disabled={
-              currentPartIndex === testParts.length - 1 &&
-              currentQuestionIndex === currentPart.questions.length - 1
-            }
-          >
-            <Text style={styles.navButtonText}>Câu sau</Text>
-            <Icon name="chevron-right" size={20} color="#6B7280" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Question Navigation Sidebar */}
-        <View style={styles.sidebar}>
-          <Text style={styles.sidebarTitle}>Danh sách câu hỏi</Text>
-
-          {testParts.map((part, partIndex) => (
-            <View key={part.partNumber} style={styles.partContainer}>
-              <Text
-                style={[
-                  styles.partTitle,
-                  partIndex === currentPartIndex
-                    ? styles.currentPart
-                    : partIndex < currentPartIndex
-                    ? styles.completedPart
-                    : styles.futurePart,
-                ]}
-              >
-                Part {part.partNumber} ({part.durationMinutes} phút)
-              </Text>
-
-              <View style={styles.questionsGrid}>
-                {part.questions.map((question, questionIndex) => {
-                  const isAnswered = userAnswers.has(question.questionId);
-                  const isCurrent =
-                    partIndex === currentPartIndex &&
-                    questionIndex === currentQuestionIndex;
-                  const canAccess = partIndex >= currentPartIndex;
+            {/* Answer Choices */}
+            <View style={styles.answersCard}>
+              <Text style={styles.answersTitle}>Chọn đáp án:</Text>
+              <View style={styles.choicesContainer}>
+                {currentQuestion?.choices?.map((choice, index) => {
+                  const isSelected =
+                    userAnswers.get(currentQuestion.id) === choice.id;
+                  const letter = String.fromCharCode(65 + index);
 
                   return (
                     <TouchableOpacity
-                      key={`${part.partNumber}_${question.questionNumber}_${questionIndex}`}
+                      key={choice.id}
                       style={[
-                        styles.questionButton,
-                        isCurrent && styles.currentQuestion,
-                        isAnswered && styles.answeredQuestion,
-                        !canAccess && styles.lockedQuestion,
+                        styles.choiceButton,
+                        isSelected && styles.selectedChoice,
                       ]}
-                      onPress={() =>
-                        navigateToQuestion(partIndex, questionIndex)
-                      }
-                      disabled={!canAccess}
+                      onPress={() => handleAnswerSelect(choice.id)}
                     >
-                      <Text
-                        style={[
-                          styles.questionButtonText,
-                          isCurrent && styles.currentQuestionText,
-                          isAnswered && styles.answeredQuestionText,
-                          !canAccess && styles.lockedQuestionText,
-                        ]}
-                      >
-                        {question.questionNumber}
-                      </Text>
+                      <View style={styles.choiceContent}>
+                        <View
+                          style={[
+                            styles.choiceLetter,
+                            isSelected && styles.selectedChoiceLetter,
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.choiceLetterText,
+                              isSelected && styles.selectedChoiceLetterText,
+                            ]}
+                          >
+                            {letter}
+                          </Text>
+                        </View>
+                        <Text
+                          style={[
+                            styles.choiceText,
+                            isSelected && styles.selectedChoiceText,
+                          ]}
+                        >
+                          {choice.content}
+                        </Text>
+                      </View>
+                      {isSelected && (
+                        <View style={styles.selectedIndicator}>
+                          <Icon name="check" size={16} color="#10B981" />
+                        </View>
+                      )}
                     </TouchableOpacity>
                   );
                 })}
               </View>
             </View>
-          ))}
+          </ScrollView>
 
-          <TouchableOpacity
-            style={styles.submitButton}
-            onPress={handleSubmitTest}
-            disabled={submitting}
-          >
-            {submitting ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Text style={styles.submitButtonText}>Nộp bài</Text>
-            )}
-          </TouchableOpacity>
+          {/* Navigation Controls */}
+          <View style={styles.navigationControls}>
+            <TouchableOpacity
+              style={[
+                styles.navButton,
+                currentPartIndex === 0 &&
+                  currentQuestionIndex === 0 &&
+                  styles.disabledButton,
+              ]}
+              onPress={() => {
+                if (currentQuestionIndex > 0) {
+                  navigateToQuestion(
+                    currentPartIndex,
+                    currentQuestionIndex - 1
+                  );
+                } else if (currentPartIndex > 0) {
+                  const prevPart = testParts[currentPartIndex - 1];
+                  navigateToQuestion(
+                    currentPartIndex - 1,
+                    prevPart.questions.length - 1
+                  );
+                }
+              }}
+              disabled={currentPartIndex === 0 && currentQuestionIndex === 0}
+            >
+              <Icon name="chevron-left" size={20} color="#6B7280" />
+              <Text style={styles.navButtonText}>Câu trước</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.navButton,
+                currentPartIndex === testParts.length - 1 &&
+                  currentQuestionIndex === currentPart.questions.length - 1 &&
+                  styles.disabledButton,
+              ]}
+              onPress={() => {
+                const currentPartQuestions = currentPart.questions;
+                if (currentQuestionIndex < currentPartQuestions.length - 1) {
+                  navigateToQuestion(
+                    currentPartIndex,
+                    currentQuestionIndex + 1
+                  );
+                } else if (currentPartIndex < testParts.length - 1) {
+                  navigateToQuestion(currentPartIndex + 1, 0);
+                }
+              }}
+              disabled={
+                currentPartIndex === testParts.length - 1 &&
+                currentQuestionIndex === currentPart.questions.length - 1
+              }
+            >
+              <Text style={styles.navButtonText}>Câu sau</Text>
+              <Icon name="chevron-right" size={20} color="#6B7280" />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.submitButton}
+              onPress={handleSubmitTest}
+              disabled={submitting}
+            >
+              {submitting ? (
+                <ActivityIndicator color="#FFFFFF" size="small" />
+              ) : (
+                <>
+                  <Icon name="send" size={18} color="#FFFFFF" />
+                  <Text style={styles.submitButtonText}>Nộp bài</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
         </View>
       </View>
     </View>
@@ -922,149 +1319,239 @@ const TestDetailScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F9FAFB",
+    backgroundColor: "#F8FAFC",
   },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#F9FAFB",
+    backgroundColor: "#F8FAFC",
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: "#6B7280",
+    color: "#64748B",
   },
   errorContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#F9FAFB",
+    backgroundColor: "#F8FAFC",
   },
   errorText: {
     marginTop: 16,
     fontSize: 16,
-    color: "#6B7280",
+    color: "#64748B",
   },
   errorButton: {
     marginTop: 16,
-    backgroundColor: "#6B7280",
+    backgroundColor: "#64748B",
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 12,
   },
   errorButtonText: {
     color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: "500",
+    fontWeight: "600",
   },
+
+  // Header Styles
   header: {
-    backgroundColor: "#FFFFFF",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
-    padding: 16,
+    backgroundColor: "#1E293B",
+    paddingTop: 50,
+    paddingBottom: 20,
+    paddingHorizontal: 20,
   },
-  headerContent: {
+  headerTop: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-start",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    alignItems: "center",
+    marginBottom: 16,
   },
   headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
     flex: 1,
-    marginRight: 16,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  headerInfo: {
+    flex: 1,
   },
   testTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#111827",
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#FFFFFF",
     marginBottom: 4,
   },
   testSubtitle: {
     fontSize: 14,
-    color: "#6B7280",
+    color: "#94A3B8",
+    fontWeight: "500",
   },
-  timerContainer: {
+  timerSection: {
     alignItems: "flex-end",
   },
-  timerItem: {
+  timerCard: {
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    borderRadius: 12,
+    padding: 12,
     alignItems: "center",
-    marginBottom: 8,
+    minWidth: 120,
+  },
+  timerHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 4,
   },
   timerLabel: {
     fontSize: 12,
-    color: "#6B7280",
-    marginBottom: 2,
+    color: "#94A3B8",
+    marginLeft: 4,
+    fontWeight: "500",
   },
   timerValue: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#10B981",
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#FFFFFF",
   },
   timerWarning: {
-    color: "#EF4444",
+    color: "#F87171",
   },
+  progressBarContainer: {
+    marginTop: 8,
+  },
+  progressBar: {
+    height: 4,
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    borderRadius: 2,
+    marginBottom: 8,
+  },
+  progressFill: {
+    height: "100%",
+    backgroundColor: "#3B82F6",
+    borderRadius: 2,
+  },
+  progressText: {
+    fontSize: 12,
+    color: "#94A3B8",
+    textAlign: "center",
+    fontWeight: "500",
+  },
+
+  // Main Content
   mainContent: {
     flex: 1,
-    flexDirection: "row",
+    flexDirection: "column",
   },
-  questionContainer: {
+  questionListSection: {
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#E2E8F0",
+    paddingVertical: 16,
+  },
+  questionListHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    marginBottom: 12,
+  },
+  questionListTitle: {
+    fontSize: screenWidth > 768 ? 16 : 14,
+    fontWeight: "700",
+    color: "#1E293B",
+    marginLeft: 8,
+  },
+  questionListContainer: {
+    paddingHorizontal: 20,
+  },
+  partSection: {
+    marginRight: 20,
+    minWidth: 120,
+  },
+  questionContentSection: {
     flex: 1,
-    padding: 20,
+    backgroundColor: "#F8FAFC",
+  },
+
+  // Question Styles
+  questionScrollView: {
+    flex: 1,
+    padding: screenWidth > 768 ? 24 : 20,
+  },
+  questionCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: screenWidth > 768 ? 28 : 24,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
   },
   questionHeader: {
     flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 20,
   },
   questionBadge: {
     backgroundColor: "#DBEAFE",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    marginRight: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
   },
   questionBadgeText: {
     color: "#1E40AF",
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: "600",
   },
-  questionPoints: {
-    backgroundColor: "#F3F4F6",
-    color: "#6B7280",
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
+  questionMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  pointsBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FEF3C7",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  pointsText: {
+    color: "#92400E",
     fontSize: 14,
+    fontWeight: "600",
+    marginLeft: 4,
   },
   questionContent: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    // No specific styles needed
   },
   questionText: {
-    fontSize: 16,
-    color: "#111827",
-    lineHeight: 24,
-    marginBottom: 16,
+    fontSize: screenWidth > 768 ? 19 : 17,
+    color: "#1E293B",
+    lineHeight: screenWidth > 768 ? 30 : 26,
+    fontWeight: "500",
   },
   attachmentsContainer: {
+    marginTop: 20,
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
-    marginTop: 12,
+    gap: 12,
   },
   attachmentItem: {
-    width: "48%", // Adjust as needed for 2 columns
-    aspectRatio: 1.2, // Adjust as needed for aspect ratio
-    borderRadius: 8,
+    width: "48%",
+    aspectRatio: 1.2,
+    borderRadius: 12,
     overflow: "hidden",
   },
   attachmentImage: {
@@ -1077,7 +1564,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#3B82F6",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 12,
     gap: 8,
   },
   audioButton: {
@@ -1086,49 +1573,53 @@ const styles = StyleSheet.create({
   audioText: {
     color: "#FFFFFF",
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: "600",
   },
   documentButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "#F1F5F9",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 12,
     gap: 8,
   },
   documentText: {
     color: "#3B82F6",
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: "600",
   },
-  answersContainer: {
+
+  // Answer Styles
+  answersCard: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 20,
+    borderRadius: 16,
+    padding: screenWidth > 768 ? 28 : 24,
     marginBottom: 20,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 12,
+    elevation: 5,
   },
   answersTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#111827",
-    marginBottom: 12,
+    fontSize: screenWidth > 768 ? 19 : 17,
+    fontWeight: "700",
+    color: "#1E293B",
+    marginBottom: 20,
   },
-  answersList: {
-    // No specific styles for ScrollView, content handles its own scrolling
+  choicesContainer: {
+    gap: 12,
   },
   choiceButton: {
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 12,
-    backgroundColor: "#F9FAFB",
+    borderWidth: 2,
+    borderColor: "#E2E8F0",
+    borderRadius: 12,
+    padding: screenWidth > 768 ? 18 : 16,
+    backgroundColor: "#FFFFFF",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   selectedChoice: {
     borderColor: "#3B82F6",
@@ -1137,128 +1628,127 @@ const styles = StyleSheet.create({
   choiceContent: {
     flexDirection: "row",
     alignItems: "center",
+    flex: 1,
   },
   choiceLetter: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: "#E5E7EB",
-    color: "#6B7280",
-    textAlign: "center",
-    lineHeight: 24,
-    fontSize: 14,
-    fontWeight: "500",
-    marginRight: 12,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#F1F5F9",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 16,
   },
   selectedChoiceLetter: {
     backgroundColor: "#3B82F6",
   },
   choiceLetterText: {
-    color: "#6B7280",
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#64748B",
   },
   selectedChoiceLetterText: {
     color: "#FFFFFF",
   },
   choiceText: {
     flex: 1,
-    fontSize: 16,
-    color: "#111827",
-    lineHeight: 22,
+    fontSize: screenWidth > 768 ? 17 : 16,
+    color: "#1E293B",
+    lineHeight: screenWidth > 768 ? 26 : 24,
+    fontWeight: "500",
   },
   selectedChoiceText: {
-    color: "#111827",
+    color: "#1E293B",
   },
-  navigationContainer: {
+  selectedIndicator: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: "#D1FAE5",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  // Navigation Controls
+  navigationControls: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+    padding: screenWidth > 768 ? 24 : 20,
     backgroundColor: "#FFFFFF",
-    padding: 16,
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderTopWidth: 1,
+    borderTopColor: "#E2E8F0",
   },
   navButton: {
     flexDirection: "row",
     alignItems: "center",
+    backgroundColor: "#F1F5F9",
+    paddingHorizontal: screenWidth > 768 ? 20 : 16,
+    paddingVertical: screenWidth > 768 ? 12 : 10,
+    borderRadius: 12,
     gap: 8,
   },
   disabledButton: {
     opacity: 0.5,
   },
   navButtonText: {
-    fontSize: 16,
+    fontSize: screenWidth > 768 ? 16 : 14,
     color: "#3B82F6",
-    fontWeight: "500",
-  },
-  progressInfo: {
-    // No specific styles for View, content handles its own layout
-  },
-  progressText: {
-    fontSize: 14,
-    color: "#6B7280",
-  },
-  sidebar: {
-    width: 280,
-    backgroundColor: "#FFFFFF",
-    borderLeftWidth: 1,
-    borderLeftColor: "#E5E7EB",
-    padding: 16,
-  },
-  sidebarTitle: {
-    fontSize: 16,
     fontWeight: "600",
-    color: "#111827",
-    marginBottom: 16,
   },
-  partContainer: {
-    marginBottom: 20,
+
+  partHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
   },
   partTitle: {
-    fontSize: 14,
-    fontWeight: "500",
-    marginBottom: 8,
+    fontSize: screenWidth > 768 ? 15 : 13,
+    fontWeight: "600",
   },
-  currentPart: {
+  currentPartTitle: {
     color: "#3B82F6",
   },
-  completedPart: {
+  completedPartTitle: {
     color: "#10B981",
   },
-  futurePart: {
-    color: "#6B7280",
+  futurePartTitle: {
+    color: "#64748B",
+  },
+  partDuration: {
+    fontSize: 11,
+    color: "#94A3B8",
+    fontWeight: "500",
   },
   questionsGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 4,
+    gap: 6,
   },
   questionButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: screenWidth > 768 ? 32 : 28,
+    height: screenWidth > 768 ? 32 : 28,
+    borderRadius: screenWidth > 768 ? 16 : 14,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F3F4F6",
+    backgroundColor: "#E2E8F0",
   },
   currentQuestion: {
     backgroundColor: "#3B82F6",
   },
   answeredQuestion: {
     backgroundColor: "#D1FAE5",
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: "#10B981",
   },
   lockedQuestion: {
-    backgroundColor: "#F9FAFB",
+    backgroundColor: "#F1F5F9",
   },
   questionButtonText: {
-    fontSize: 12,
-    fontWeight: "500",
-    color: "#6B7280",
+    fontSize: screenWidth > 768 ? 13 : 11,
+    fontWeight: "600",
+    color: "#64748B",
   },
   currentQuestionText: {
     color: "#FFFFFF",
@@ -1267,56 +1757,104 @@ const styles = StyleSheet.create({
     color: "#10B981",
   },
   lockedQuestionText: {
-    color: "#D1D5DB",
+    color: "#CBD5E1",
   },
   submitButton: {
     backgroundColor: "#EF4444",
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: screenWidth > 768 ? 14 : 12,
+    paddingHorizontal: screenWidth > 768 ? 20 : 16,
+    borderRadius: 10,
     alignItems: "center",
-    marginTop: 20,
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 6,
   },
   submitButtonText: {
     color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "500",
+    fontSize: screenWidth > 768 ? 15 : 13,
+    fontWeight: "700",
+  },
+
+  // Result Styles
+  resultHeader: {
+    backgroundColor: "#1E293B",
+    paddingTop: 50,
+    paddingBottom: 20,
+    paddingHorizontal: 20,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  resultBackButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 16,
+  },
+  resultHeaderTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#FFFFFF",
   },
   resultContainer: {
     flex: 1,
     padding: 20,
   },
-  resultTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#111827",
-    textAlign: "center",
+  testInfoCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 24,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  testInfoHeader: {
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 8,
   },
-  resultSubtitle: {
-    fontSize: 16,
-    color: "#6B7280",
-    textAlign: "center",
-    marginBottom: 32,
+  testInfoTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1E293B",
+    marginLeft: 12,
   },
-  resultStatus: {
-    padding: 24,
-    borderRadius: 12,
+  testInfoSubtitle: {
+    fontSize: 14,
+    color: "#64748B",
+    fontWeight: "500",
+  },
+  resultStatusCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 32,
     alignItems: "center",
-    marginBottom: 32,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
   },
-  passStatus: {
-    backgroundColor: "#D1FAE5",
+  passStatusCard: {
     borderWidth: 2,
     borderColor: "#10B981",
   },
-  failStatus: {
-    backgroundColor: "#FEE2E2",
+  failStatusCard: {
     borderWidth: 2,
     borderColor: "#EF4444",
   },
+  resultIconContainer: {
+    marginBottom: 16,
+  },
   resultStatusText: {
     fontSize: 32,
-    fontWeight: "bold",
+    fontWeight: "800",
     marginBottom: 8,
   },
   passText: {
@@ -1325,37 +1863,104 @@ const styles = StyleSheet.create({
   failText: {
     color: "#EF4444",
   },
-  resultScore: {
+  resultStatusSubtext: {
     fontSize: 16,
-    color: "#6B7280",
+    color: "#64748B",
+    textAlign: "center",
+    fontWeight: "500",
+  },
+  scoreCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 24,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  scoreCardTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1E293B",
+    marginBottom: 20,
+  },
+  scoreRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  scoreItem: {
+    flex: 1,
+    alignItems: "center",
+  },
+  scoreLabel: {
+    fontSize: 14,
+    color: "#64748B",
+    fontWeight: "500",
+    marginBottom: 8,
+  },
+  scoreValue: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#1E293B",
+  },
+  scoreDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: "#E2E8F0",
+    marginHorizontal: 20,
+  },
+  percentageContainer: {
+    alignItems: "center",
+  },
+  percentageBar: {
+    width: "100%",
+    height: 8,
+    backgroundColor: "#E2E8F0",
+    borderRadius: 4,
+    marginBottom: 12,
+  },
+  percentageFill: {
+    height: "100%",
+    borderRadius: 4,
+  },
+  percentageText: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1E293B",
   },
   resultActions: {
-    flexDirection: "row",
-    gap: 12,
+    gap: 16,
   },
-  backButton: {
-    flex: 1,
+  primaryActionButton: {
     backgroundColor: "#3B82F6",
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: 16,
+    borderRadius: 12,
     alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 8,
   },
-  backButtonText: {
+  primaryActionText: {
     color: "#FFFFFF",
     fontSize: 16,
-    fontWeight: "500",
+    fontWeight: "700",
   },
-  retryButton: {
-    flex: 1,
-    backgroundColor: "#10B981",
-    paddingVertical: 12,
-    borderRadius: 8,
+  secondaryActionButton: {
+    backgroundColor: "#F1F5F9",
+    paddingVertical: 16,
+    borderRadius: 12,
     alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 8,
   },
-  retryButtonText: {
-    color: "#FFFFFF",
+  secondaryActionText: {
+    color: "#3B82F6",
     fontSize: 16,
-    fontWeight: "500",
+    fontWeight: "700",
   },
 });
 
