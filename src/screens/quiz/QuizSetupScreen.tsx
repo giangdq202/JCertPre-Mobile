@@ -12,8 +12,8 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useQuiz } from "../contexts/QuizContext";
-import { ContentName, CourseLevel, SubContentName } from "../types/quiz";
+import { useQuiz } from "../../contexts/QuizContext";
+import { ContentName, CourseLevel, SubContentName } from "../../types/quiz";
 
 type RootStackParamList = {
   QuizSetup: undefined;
