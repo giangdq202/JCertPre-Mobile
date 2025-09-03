@@ -8,6 +8,7 @@ import {
   CourseLevel,
   SubContentName
 } from '../types/quiz';
+import { BASE_URL } from '../const/apiUrl/baseUrl';
 
 // Mock data for offline development
 const mockQuestions: RandomQuestionWithChoicesDto[] = [
@@ -47,7 +48,7 @@ const mockQuestions: RandomQuestionWithChoicesDto[] = [
 ];
 
 class QuizService {
-  private baseURL = 'https://your-api-base-url.com'; // Replace with actual API URL
+  private baseURL = BASE_URL; // Use the correct API URL
   
   async fetchRandomQuestions(request: GetRandomQuestionsRequestDto): Promise<RandomQuestionWithChoicesDto[]> {
     try {
