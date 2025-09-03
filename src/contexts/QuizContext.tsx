@@ -217,8 +217,8 @@ export const QuizProvider: React.FC<QuizProviderProps> = ({ children }) => {
       completedAt: new Date(),
     };
 
-    // Submit results to backend
-    quizService.submitQuizResults(result).catch(console.error);
+    // Results are displayed immediately, no need to store
+    console.log('Quiz completed with result:', result);
 
     return result;
   };

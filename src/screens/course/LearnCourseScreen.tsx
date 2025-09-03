@@ -34,18 +34,11 @@ import { getLessonProgressByUserAndLesson } from "../../services/lessonProgressS
 import { TestInterface } from "../../components/TestInterface";
 import { VideoLessonPlayer } from "../../components/VideoLessonPlayer";
 
+// Utils
+import { detectVideoDocument, getVideoDetectionDebugInfo, isVideoFile } from "../../utils/videoUtils";
+
 type RootStackParamList = {
   LearnCourse: { courseId: string };
-};
-
-// Helper: nhận diện video từ url
-const isVideoFile = (url?: string) => {
-  if (!url) return false;
-  return (
-    /\.(mp4|mov|m3u8|webm)(\?|$)/i.test(url) ||
-    url.includes("youtube.com") ||
-    url.includes("vimeo.com")
-  );
 };
 
 const LearnCourseScreen: React.FC = () => {
@@ -136,8 +129,15 @@ const LearnCourseScreen: React.FC = () => {
       const docs = await getDocumentsByLessonId(selectedLessonId);
       setDocuments(docs || []);
 
-      const video = docs?.find((d) => isVideoFile(d.fileUrl));
-      setVideoDoc(video || null);
+      // Use enhanced video detection
+      const video = detectVideoDocument(docs || []);
+      setVideoDoc(video);
+      
+      // Debug info in development
+      if (__DEV__) {
+        const debugInfo = getVideoDetectionDebugInfo(docs || []);
+        console.log("🔍 Video Detection Debug:", debugInfo);
+      }
 
       if (!lessonTests[selectedLessonId]) {
         try {
@@ -217,7 +217,20 @@ const LearnCourseScreen: React.FC = () => {
             Documents Count: {documents.length}
           </Text>
           {videoDoc && (
-            <Text style={styles.debugText}>Video URL: {videoDoc.fileUrl}</Text>
+            <>
+              <Text style={styles.debugText}>Video URL: {videoDoc.fileUrl}</Text>
+              <Text style={styles.debugText}>Video Name: {videoDoc.documentName}</Text>
+            </>
+          )}
+          {documents.length > 0 && (
+            <View style={styles.debugDocList}>
+              <Text style={styles.debugText}>📄 All Documents:</Text>
+              {documents.map((doc, index) => (
+                <Text key={doc.documentId} style={styles.debugText}>
+                  {index + 1}. {doc.documentName} - {doc.fileUrl.slice(0, 50)}...
+                </Text>
+              ))}
+            </View>
           )}
         </View>
       )}
@@ -227,15 +240,26 @@ const LearnCourseScreen: React.FC = () => {
           courseId={courseId}
           lessonId={selectedLessonId!}
           videoUrl={videoDoc.fileUrl}
+          lessonTitle={videoDoc.documentName}
         />
       ) : (
         <View style={styles.noVideoBox}>
+          <Icon name="video-off" size={48} color="#9CA3AF" style={{ marginBottom: 12 }} />
           <Text style={styles.noVideoText}>Không có video cho bài học này</Text>
+          <Text style={styles.noVideoSubText}>
+            {documents.length === 0 
+              ? "Đang tải tài liệu..." 
+              : `Tìm thấy ${documents.length} tài liệu, nhưng không có video`
+            }
+          </Text>
           <TouchableOpacity
             style={styles.retryButton}
             onPress={fetchLessonResources}
           >
-            <Text style={styles.retryButtonText}>🔄 Thử lại</Text>
+            <View style={styles.retryButtonContent}>
+              <Icon name="refresh-cw" size={16} color="#FFFFFF" />
+              <Text style={styles.retryButtonText}>Thử lại</Text>
+            </View>
           </TouchableOpacity>
 
           {/* 
@@ -409,6 +433,12 @@ const styles = StyleSheet.create({
     color: "#856404",
     marginBottom: 4,
   },
+  debugDocList: {
+    marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: "#FDD835",
+  },
   retryButton: {
     backgroundColor: "#3B82F6",
     paddingHorizontal: 16,
@@ -416,17 +446,29 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginTop: 12,
   },
+  retryButtonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   retryButtonText: {
     color: "#FFFFFF",
     fontSize: 14,
     fontWeight: "bold",
     textAlign: "center",
+    marginLeft: 8,
   },
   noVideoText: {
     fontSize: 16,
     color: "#6B7280",
     textAlign: "center",
     marginBottom: 8,
+  },
+  noVideoSubText: {
+    fontSize: 12,
+    color: "#9CA3AF",
+    textAlign: "center",
+    marginBottom: 12,
   },
   demoButton: {
     backgroundColor: "#10B981",
