@@ -45,11 +45,6 @@ const QuizScreen: React.FC = () => {
       session.currentQuestionIndex < session.questions.length - 1
     ) {
       nextQuestion();
-    } else if (session) {
-      const result = finishQuiz();
-      if (result) {
-        navigation.navigate("QuizResults");
-      }
     }
   }, [session, animationValue, nextQuestion, finishQuiz, navigation]);
 
@@ -61,12 +56,12 @@ const QuizScreen: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    if (!session) {
-      navigation.goBack();
-      return;
-    }
-  }, [session, navigation]);
+  // useEffect(() => {
+  //   if (!session) {
+  //     navigation.goBack();
+  //     return;
+  //   }
+  // }, [session, navigation]);
 
   useEffect(() => {
     if (!session) return;
@@ -128,15 +123,27 @@ const QuizScreen: React.FC = () => {
     setShowExplanation(true);
 
     // Auto-advance after 2 seconds (only for new selections)
-    if (!selectedChoice) {
-      setTimeout(() => {
-        handleNext();
-      }, 2000);
-    }
+    // if (!selectedChoice) {
+    //   setTimeout(() => {
+    //     handleNext();
+    //   }, 2000);
+    // }
   };
 
+  const handleSubmit = React.useCallback(() => {
+    if (session) {
+      const result = finishQuiz();
+      if (result) {
+        navigation.navigate("QuizResults");
+      }
+    }
+  }, [session, finishQuiz, navigation]);
   if (!session) {
-    return null;
+    return (
+      <SafeAreaView style={styles.container}>
+        <Text>Đang tải dữ liệu...</Text>
+      </SafeAreaView>
+    );
   }
 
   const currentQuestion = session.questions[session.currentQuestionIndex];
@@ -210,158 +217,183 @@ const QuizScreen: React.FC = () => {
         colors={["#10b981", "#059669", "#047857"]}
         style={styles.gradient}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.headerTop}>
-            <TouchableOpacity
-              onPress={() => navigation.goBack()}
-              style={styles.backButton}
-            >
-              <Text style={styles.backButtonText}>←</Text>
-            </TouchableOpacity>
-
-            <View style={styles.progressContainer}>
-              <Text style={styles.progressText}>
-                {session.currentQuestionIndex + 1} / {session.questions.length}
-              </Text>
-            </View>
-
-            <View style={styles.timerContainer}>
-              <Text style={styles.timerText}>⏱️ {timeLeft}s</Text>
-            </View>
-          </View>
-
-          {/* Progress Bar */}
-          <View style={styles.progressBarContainer}>
-            <Animated.View
-              style={[styles.progressBar, { width: `${progress}%` }]}
-            />
-          </View>
-        </View>
-
-        {/* Question Content */}
-        <ScrollView
-          style={styles.scrollView}
-          showsVerticalScrollIndicator={false}
-        >
-          <Animated.View
-            style={[
-              styles.questionCard,
-              {
-                transform: [{ translateY }],
-                opacity,
-              },
-            ]}
+        {!session ? (
+          // Loading UI
+          <View
+            style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
           >
-            <View style={styles.questionHeader}>
-              <Text style={styles.questionLabel}>
-                ❓ Câu hỏi {session.currentQuestionIndex + 1}
-              </Text>
-              <Text style={styles.questionText}>
-                {currentQuestion.questionText}
-              </Text>
-            </View>
-
-            {/* Choices */}
-            <View style={styles.choicesContainer}>
-              {currentQuestion.choices.map((choice, index) => (
-                <TouchableOpacity
-                  key={choice.choiceId}
-                  onPress={() => handleChoiceSelect(choice.choiceId)}
-                  style={[styles.choiceButton, getChoiceStyle(choice.choiceId)]}
-                >
-                  <View style={styles.choiceContent}>
-                    <View
-                      style={[
-                        styles.choiceLetter,
-                        getChoiceLetterStyle(choice.choiceId),
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.choiceLetterText,
-                          getChoiceTextStyle(choice.choiceId),
-                        ]}
-                      >
-                        {String.fromCharCode(65 + index)}
-                      </Text>
-                    </View>
-                    <Text
-                      style={[
-                        styles.choiceText,
-                        getChoiceTextStyle(choice.choiceId),
-                      ]}
-                    >
-                      {choice.content}
-                    </Text>
-                    {showExplanation && choice.isCorrect && (
-                      <Text style={styles.correctIcon}>✓</Text>
-                    )}
-                    {showExplanation &&
-                      choice.choiceId === selectedChoice &&
-                      !choice.isCorrect && (
-                        <Text style={styles.incorrectIcon}>✗</Text>
-                      )}
-                  </View>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            {/* Explanation */}
-            {showExplanation && currentQuestion.explanation && (
-              <View style={styles.explanationContainer}>
-                <Text style={styles.explanationTitle}>💡 Giải thích:</Text>
-                <Text style={styles.explanationText}>
-                  {currentQuestion.explanation}
-                </Text>
-              </View>
-            )}
-          </Animated.View>
-        </ScrollView>
-
-        {/* Bottom Navigation */}
-        <View style={styles.bottomNavigation}>
-          <View style={styles.navigationButtons}>
-            <TouchableOpacity
-              onPress={handlePrevious}
-              disabled={session.currentQuestionIndex === 0}
-              style={[
-                styles.navButton,
-                styles.previousButton,
-                session.currentQuestionIndex === 0 && styles.disabledButton,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.navButtonText,
-                  session.currentQuestionIndex === 0 &&
-                    styles.disabledButtonText,
-                ]}
-              >
-                ← Câu trước
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={handleNext}
-              style={[styles.navButton, styles.nextButton]}
-            >
-              <Text style={styles.nextButtonText}>
-                {session.currentQuestionIndex === session.questions.length - 1
-                  ? "🏁 Kết thúc"
-                  : "Câu tiếp →"}
-              </Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Manual Navigation Info */}
-          <View style={styles.tipContainer}>
-            <Text style={styles.tipText}>
-              💡 Tip: Bạn có thể quay lại câu trước để xem lại hoặc thay đổi đáp
-              án
+            <Text style={{ color: "#fff", fontSize: 16 }}>
+              Đang tải dữ liệu...
             </Text>
           </View>
-        </View>
+        ) : (
+          <>
+            {/* Header */}
+            <View style={styles.header}>
+              <View style={styles.headerTop}>
+                <TouchableOpacity
+                  onPress={() => navigation.goBack()}
+                  style={styles.backButton}
+                >
+                  <Text style={styles.backButtonText}>←</Text>
+                </TouchableOpacity>
+
+                <View style={styles.progressContainer}>
+                  <Text style={styles.progressText}>
+                    {(session?.currentQuestionIndex ?? 0) + 1} /{" "}
+                    {session?.questions?.length ?? 0}
+                  </Text>
+                </View>
+
+                <View style={styles.timerContainer}>
+                  <Text style={styles.timerText}>⏱️ {timeLeft}s</Text>
+                </View>
+              </View>
+
+              {/* Progress Bar */}
+              <View style={styles.progressBarContainer}>
+                <Animated.View
+                  style={[styles.progressBar, { width: `${progress}%` }]}
+                />
+              </View>
+            </View>
+
+            {/* Question Content */}
+            <ScrollView
+              style={styles.scrollView}
+              showsVerticalScrollIndicator={false}
+            >
+              <Animated.View
+                style={[
+                  styles.questionCard,
+                  {
+                    transform: [{ translateY }],
+                    opacity,
+                  },
+                ]}
+              >
+                <View style={styles.questionHeader}>
+                  <Text style={styles.questionLabel}>
+                    ❓ Câu hỏi {(session?.currentQuestionIndex ?? 0) + 1}
+                  </Text>
+
+                  <Text style={styles.questionText}>
+                    {currentQuestion.questionText}
+                  </Text>
+                </View>
+
+                {/* Choices */}
+                <View style={styles.choicesContainer}>
+                  {currentQuestion.choices.map((choice, index) => (
+                    <TouchableOpacity
+                      key={choice.choiceId}
+                      onPress={() => handleChoiceSelect(choice.choiceId)}
+                      style={[
+                        styles.choiceButton,
+                        getChoiceStyle(choice.choiceId),
+                      ]}
+                    >
+                      <View style={styles.choiceContent}>
+                        <View
+                          style={[
+                            styles.choiceLetter,
+                            getChoiceLetterStyle(choice.choiceId),
+                          ]}
+                        >
+                          <Text
+                            style={[
+                              styles.choiceLetterText,
+                              getChoiceTextStyle(choice.choiceId),
+                            ]}
+                          >
+                            {String.fromCharCode(65 + index)}
+                          </Text>
+                        </View>
+                        <Text
+                          style={[
+                            styles.choiceText,
+                            getChoiceTextStyle(choice.choiceId),
+                          ]}
+                        >
+                          {choice.content}
+                        </Text>
+                        {showExplanation && choice.isCorrect && (
+                          <Text style={styles.correctIcon}>✓</Text>
+                        )}
+                        {showExplanation &&
+                          choice.choiceId === selectedChoice &&
+                          !choice.isCorrect && (
+                            <Text style={styles.incorrectIcon}>✗</Text>
+                          )}
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                {/* Explanation */}
+                {showExplanation && currentQuestion.explanation && (
+                  <View style={styles.explanationContainer}>
+                    <Text style={styles.explanationTitle}>💡 Giải thích:</Text>
+                    <Text style={styles.explanationText}>
+                      {currentQuestion.explanation}
+                    </Text>
+                  </View>
+                )}
+              </Animated.View>
+            </ScrollView>
+
+            {/* Bottom Navigation */}
+            <View style={styles.bottomNavigation}>
+              <View style={styles.navigationButtons}>
+                <TouchableOpacity
+                  onPress={handlePrevious}
+                  disabled={!session || session.currentQuestionIndex === 0}
+                  style={[
+                    styles.navButton,
+                    styles.previousButton,
+                    (!session || session.currentQuestionIndex === 0) &&
+                      styles.disabledButton,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.navButtonText,
+                      session.currentQuestionIndex === 0 &&
+                        styles.disabledButtonText,
+                    ]}
+                  >
+                    ← Câu trước
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={
+                    session?.currentQuestionIndex ===
+                    (session?.questions?.length ?? 0) - 1
+                      ? handleSubmit
+                      : handleNext
+                  }
+                  style={[styles.navButton, styles.nextButton]}
+                >
+                  <Text style={styles.nextButtonText}>
+                    {session?.currentQuestionIndex ===
+                    (session?.questions?.length ?? 0) - 1
+                      ? "🏁 Nộp bài"
+                      : "Câu tiếp →"}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Manual Navigation Info */}
+              <View style={styles.tipContainer}>
+                <Text style={styles.tipText}>
+                  💡 Tip: Bạn có thể quay lại câu trước để xem lại hoặc thay đổi
+                  đáp án
+                </Text>
+              </View>
+            </View>
+          </>
+        )}
       </LinearGradient>
     </SafeAreaView>
   );

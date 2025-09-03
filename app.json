@@ -21,6 +21,7 @@
     },
     "runtimeVersion": "1.0.0",
     "jsEngine": "hermes",
+    "scheme": "jcertpremobile", 
     "ios": {
       "supportsTablet": true
     },
@@ -43,7 +44,8 @@
     "owner": "duongtoan",
     "plugins": [
       "expo-video",
-      "expo-audio"
+      "expo-audio",
+        ["expo-dev-client", { "launchMode": "most-recent" }]
     ]
   }
 }

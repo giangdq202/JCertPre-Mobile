@@ -26,6 +26,7 @@ type FlashcardScreenProp = NativeStackNavigationProp<
 >;
 
 const flashcardGroups = [
+  // --- N5 ---
   {
     id: "1",
     title: "Từ vựng N5",
@@ -35,38 +36,138 @@ const flashcardGroups = [
   },
   {
     id: "2",
-    title: "Giao tiếp cơ bản",
-    icon: "chat",
-    color: "#A7C7E7",
-    total: 10,
+    title: "Ngữ pháp N5",
+    icon: "file-document",
+    color: "#D7BDE2",
+    total: 18,
   },
   {
     id: "3",
-    title: "Động từ cơ bản",
-    icon: "run-fast",
-    color: "#FFD6A5",
-    total: 10,
-  },
-  {
-    id: "4",
-    title: "Ngữ pháp sơ cấp",
-    icon: "file-document",
-    color: "#D7BDE2",
-    total: 10,
-  },
-  {
-    id: "5",
     title: "Hán tự N5",
     icon: "translate",
     color: "#F5B7B1",
-    total: 50,
+    total: 20,
+  },
+  {
+    id: "4",
+    title: "Mẫu câu giao tiếp N5",
+    icon: "chat",
+    color: "#A7C7E7",
+    total: 15,
+  },
+
+  // --- N4 ---
+  {
+    id: "5",
+    title: "Từ vựng N4",
+    icon: "book-open-page-variant",
+    color: "#AED581",
+    total: 20,
   },
   {
     id: "6",
-    title: "Mẫu câu hay dùng",
-    icon: "format-quote-close",
-    color: "#C5CAE9",
+    title: "Ngữ pháp N4",
+    icon: "file-document-outline",
+    color: "#81D4FA",
+    total: 17,
+  },
+  {
+    id: "7",
+    title: "Hán tự N4",
+    icon: "translate",
+    color: "#FFAB91",
     total: 20,
+  },
+  {
+    id: "8",
+    title: "Mẫu câu giao tiếp N4",
+    icon: "chat-processing",
+    color: "#CE93D8",
+    total: 16,
+  },
+
+  // --- N3 ---
+  {
+    id: "9",
+    title: "Từ vựng N3",
+    icon: "book-open-outline",
+    color: "#C5E1A5",
+    total: 19,
+  },
+  {
+    id: "10",
+    title: "Ngữ pháp N3",
+    icon: "file-document-edit",
+    color: "#B39DDB",
+    total: 20,
+  },
+  {
+    id: "11",
+    title: "Hán tự N3",
+    icon: "translate",
+    color: "#E6B0AA",
+    total: 18,
+  },
+  {
+    id: "12",
+    title: "Mẫu câu giao tiếp N3",
+    icon: "comment-quote",
+    color: "#80CBC4",
+    total: 15,
+  },
+
+  // --- N2 ---
+  { id: "13", title: "Từ vựng N2", icon: "book", color: "#FFAB40", total: 20 },
+  {
+    id: "14",
+    title: "Ngữ pháp N2",
+    icon: "file-document-multiple",
+    color: "#9FA8DA",
+    total: 19,
+  },
+  {
+    id: "15",
+    title: "Hán tự N2",
+    icon: "translate",
+    color: "#FF8A65",
+    total: 20,
+  },
+  {
+    id: "16",
+    title: "Mẫu câu giao tiếp N2",
+    icon: "forum",
+    color: "#4DB6AC",
+    total: 17,
+  },
+
+  // --- N1 ---
+  {
+    id: "17",
+    title: "Từ vựng N1",
+    icon: "book-multiple",
+    color: "#9FA8DA",
+    total: 20,
+  },
+  {
+    id: "18",
+    title: "Ngữ pháp N1",
+    icon: "file-document-multiple",
+    color: "#7E57C2",
+    total: 18,
+  },
+  {
+    id: "19",
+    title: "Hán tự N1",
+    icon: "translate",
+    color: "#E57373",
+    total: 20,
+  },
+  {
+    id: "20",
+    title: "Thành ngữ - Mẫu câu nâng cao",
+    icon: "lightbulb",
+    color: "#FFB300",
+    total: 15,
   },
 ];
 

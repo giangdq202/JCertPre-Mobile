@@ -204,7 +204,7 @@ const LearnCourseScreen: React.FC = () => {
       <Text style={styles.lessonTitle}>{selectedLesson?.title}</Text>
 
       {/* Debug chỉ hiển thị khi dev */}
-      {__DEV__ && (
+      {/* {__DEV__ && (
         <View style={styles.debugBox}>
           <Text style={styles.debugText}>🔍 Debug Info:</Text>
           <Text style={styles.debugText}>
@@ -220,7 +220,7 @@ const LearnCourseScreen: React.FC = () => {
             <Text style={styles.debugText}>Video URL: {videoDoc.fileUrl}</Text>
           )}
         </View>
-      )}
+      )} */}
 
       {videoDoc ? (
         <VideoLessonPlayer
@@ -239,7 +239,7 @@ const LearnCourseScreen: React.FC = () => {
           </TouchableOpacity>
 
           {/* 
-          // Demo video (comment theo yêu cầu)
+          // Demo video 
           <TouchableOpacity
             style={styles.demoButton}
             onPress={() => {

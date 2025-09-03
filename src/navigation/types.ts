@@ -1,3 +1,5 @@
+import { NavigatorScreenParams } from "@react-navigation/native";
+
 // ================== Auth Stack ==================
 export type AuthStackParamList = {
   AuthIntroScreen: undefined;
@@ -17,7 +19,7 @@ export type BottomTabParamList = {
 
 // ================== App Stack ==================
 export type AppStackParamList = {
-  MainTabs: undefined | { screen?: keyof BottomTabParamList };
+  MainTabs: NavigatorScreenParams<BottomTabParamList>;
 
   // Flashcard
   Flashcard: undefined;

@@ -12,15 +12,16 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import { AppStackParamList } from "../../navigation/types";
 import { useQuiz } from "../../contexts/QuizContext";
 
-type RootStackParamList = {
-  QuizSetup: undefined;
-  Quiz: undefined;
-  QuizResults: undefined;
-};
+// type RootStackParamList = {
+//   QuizSetup: undefined;
+//   Quiz: undefined;
+//   QuizResults: undefined;
+// };
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
+type NavigationProp = NativeStackNavigationProp<AppStackParamList>;
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -29,17 +30,7 @@ const QuizResultsScreen: React.FC = () => {
   const { session, resetQuiz } = useQuiz();
 
   if (!session || !session.endTime) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="dark-content" backgroundColor="#F0FDF4" />
-        <View style={styles.noResultsContainer}>
-          <View style={styles.noResultsCard}>
-            <Text style={styles.noResultsEmoji}>😕</Text>
-            <Text style={styles.noResultsText}>Không có kết quả quiz nào.</Text>
-          </View>
-        </View>
-      </SafeAreaView>
-    );
+    return null;
   }
 
   const totalTime = session.endTime.getTime() - session.startTime.getTime();
@@ -361,18 +352,17 @@ const QuizResultsScreen: React.FC = () => {
           </View>
 
           {/* Action Buttons */}
+          {/* Action Buttons */}
           <View style={styles.actionButtons}>
-            <TouchableOpacity onPress={handleRetry} style={styles.retryButton}>
-              <Text style={styles.actionButtonEmoji}>🔄</Text>
-              <Text style={styles.actionButtonText}>Xem lại câu hỏi</Text>
-            </TouchableOpacity>
-
             <TouchableOpacity
-              onPress={handleBackToHome}
-              style={styles.homeButton}
+              onPress={() => {
+                resetQuiz();
+                navigation.navigate("MainTabs", { screen: "Home" });
+              }}
+              style={[styles.homeButton, { flex: 1 }]}
             >
               <Text style={styles.actionButtonEmoji}>🏠</Text>
-              <Text style={styles.actionButtonText}>Làm quiz mới</Text>
+              <Text style={styles.actionButtonText}>Về Trang chủ</Text>
             </TouchableOpacity>
           </View>
         </View>

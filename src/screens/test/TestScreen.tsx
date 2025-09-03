@@ -7,12 +7,14 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  ImageBackground,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { AppStackParamList } from "../../navigation/types";
 import Icon from "react-native-vector-icons/Feather";
 import { useAuth } from "../../auth/AuthContext";
+import backgroundImage from "../../assets/flashcard.jpg";
 
 // Services
 import { TestType, CourseLevel } from "../../services/testService";
@@ -189,10 +191,16 @@ const TestScreen: React.FC = () => {
   // Create fallback test options when API fails
   const createFallbackTestOptions = (userLevel: CourseLevel): TestOption[] => {
     const fallbackOptions: TestOption[] = [];
-    
+
     // Create basic test options based on user's current level and enrollments
-    const levels = [CourseLevel.N5, CourseLevel.N4, CourseLevel.N3, CourseLevel.N2, CourseLevel.N1];
-    
+    const levels = [
+      CourseLevel.N5,
+      CourseLevel.N4,
+      CourseLevel.N3,
+      CourseLevel.N2,
+      CourseLevel.N1,
+    ];
+
     for (const level of levels) {
       if (isTestLevelAllowed(level, userLevel)) {
         fallbackOptions.push({
@@ -205,7 +213,7 @@ const TestScreen: React.FC = () => {
         });
       }
     }
-    
+
     return fallbackOptions;
   };
 
@@ -224,12 +232,12 @@ const TestScreen: React.FC = () => {
       setErrorMsg("");
       try {
         // Log để debug
-        if (__DEV__) {
-          console.log("Loading test options...");
-          console.log("Student profile:", studentProfile);
-          console.log("Has enrollments:", hasEnrollments);
-          console.log("Enrollments count:", enrollments.length);
-        }
+        // if (__DEV__) {
+        //   console.log("Loading test options...");
+        //   console.log("Student profile:", studentProfile);
+        //   console.log("Has enrollments:", hasEnrollments);
+        //   console.log("Enrollments count:", enrollments.length);
+        // }
 
         const jlptTypes = await getAllTestTemplateTypes({
           type: TemplateTestType.JLPTAuto,
@@ -339,12 +347,12 @@ const TestScreen: React.FC = () => {
           if (__DEV__) {
             console.log("API returned 403, creating fallback test options");
           }
-          
+
           const userCurrentLevel = getCourseLevelFromString(
             studentProfile.currentLevel
           );
           const fallbackOptions = createFallbackTestOptions(userCurrentLevel);
-          
+
           if (fallbackOptions.length > 0) {
             setTestOptions(fallbackOptions);
             setErrorMsg(""); // Clear any error message
@@ -360,7 +368,8 @@ const TestScreen: React.FC = () => {
             "Không thể tải danh sách bài test. Vui lòng thử lại sau.";
 
           if (err.response?.status === 401) {
-            errorMessage = "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
+            errorMessage =
+              "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
           } else if (err.response?.status === 404) {
             errorMessage =
               "Không tìm thấy bài test nào phù hợp với trình độ của bạn.";
@@ -435,33 +444,33 @@ const TestScreen: React.FC = () => {
   // Check if there's an error message
   if (errorMsg) {
     return (
-      <View style={styles.errorContainer}>
-        <Icon name="alert-circle" size={48} color="#EF4444" />
-        <Text style={styles.errorTitle}>Có lỗi xảy ra</Text>
-        <Text style={styles.errorMessage}>{errorMsg}</Text>
-        <TouchableOpacity
-          style={styles.retryButton}
-          onPress={() => {
-            setErrorMsg("");
-            setCheckingEnrollment(true);
-            setTestOptions([]);
-            // Reload both enrollments and test options
-            checkEnrollments();
-            // Also reload test options after a short delay
-            setTimeout(() => {
-              if (hasEnrollments) {
-                setLoading(true);
-                // Trigger the loadOptions effect by updating dependencies
-                setCheckingEnrollment(false);
-              }
-            }, 1000);
-          }}
-        >
-          <Text style={styles.retryButtonText}>Thử lại</Text>
-        </TouchableOpacity>
+      <ImageBackground
+        source={backgroundImage}
+        style={styles.background}
+        resizeMode="cover"
+      >
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorMessage}>{errorMsg}</Text>
+          <TouchableOpacity
+            onPress={() => {
+              setErrorMsg("");
+              setCheckingEnrollment(true);
+              setTestOptions([]);
+              // Reload both enrollments and test options
+              checkEnrollments();
+              // Also reload test options after a short delay
+              setTimeout(() => {
+                if (hasEnrollments) {
+                  setLoading(true);
+                  // Trigger the loadOptions effect by updating dependencies
+                  setCheckingEnrollment(false);
+                }
+              }, 1000);
+            }}
+          ></TouchableOpacity>
 
-        {/* Debug info in development */}
-        {__DEV__ && (
+          {/* Debug info in development */}
+          {/* {__DEV__ && (
           <View style={styles.debugContainer}>
             <Text style={styles.debugTitle}>Debug Info:</Text>
             <Text style={styles.debugText}>User ID: {userInfo?.id}</Text>
@@ -499,16 +508,17 @@ const TestScreen: React.FC = () => {
               <Text style={styles.debugButtonText}>Log Current State</Text>
             </TouchableOpacity>
           </View>
-        )}
+        )} */}
 
-        {/* Support contact info */}
-        <View style={styles.supportContainer}>
-          <Text style={styles.supportText}>
-            Nếu vấn đề vẫn tiếp tục, vui lòng liên hệ hỗ trợ:
-          </Text>
-          <Text style={styles.supportEmail}>support@jcertpre.com</Text>
+          {/* Support contact info */}
+          <View style={styles.supportContainer}>
+            <Text style={styles.supportText}>
+              Nếu vấn đề vẫn tiếp tục, vui lòng liên hệ hỗ trợ:
+            </Text>
+            <Text style={styles.supportEmail}>support@jcertpre.com</Text>
+          </View>
         </View>
-      </View>
+      </ImageBackground>
     );
   }
 
@@ -547,7 +557,7 @@ const TestScreen: React.FC = () => {
           )}
 
           {/* Debug info in development */}
-          {__DEV__ && (
+          {/* {__DEV__ && (
             <View style={styles.debugContainer}>
               <Text style={styles.debugTitle}>Debug Info:</Text>
               <Text style={styles.debugText}>User ID: {userInfo?.id}</Text>
@@ -582,7 +592,7 @@ const TestScreen: React.FC = () => {
                 <Text style={styles.debugButtonText}>Log Current State</Text>
               </TouchableOpacity>
             </View>
-          )}
+          )} */}
         </View>
       ) : (
         <>
@@ -724,10 +734,11 @@ const styles = StyleSheet.create({
   errorContainer: {
     margin: 20,
     padding: 16,
-    backgroundColor: "#FEE2E2",
+    backgroundColor: "#98eaaaff",
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#FECACA",
+    borderColor: "#368a56ff",
+    marginTop: 350,
   },
   errorText: {
     color: "#DC2626",
@@ -984,6 +995,7 @@ const styles = StyleSheet.create({
     color: "#3B82F6",
     fontWeight: "500",
   },
+  background: { flex: 1, backgroundColor: "#FFFFFF" },
 });
 
 export default TestScreen;

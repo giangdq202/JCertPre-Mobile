@@ -151,7 +151,7 @@ const QuizSetupScreen: React.FC = () => {
         <TouchableOpacity onPress={handleGoBack} style={styles.backButton}>
           <Text style={styles.backButtonText}>← Quay lại</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>🎯 Cấu hình Quiz</Text>
+        <Text style={styles.headerTitle}> Cấu hình Quiz</Text>
         <View style={styles.headerSpacer} />
       </View>
 

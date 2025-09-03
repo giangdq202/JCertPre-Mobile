@@ -183,11 +183,13 @@ export default function HomeScreen() {
         contentContainerStyle={styles.contentContainer}
         ListHeaderComponent={
           <>
-            <SearchBar
-              value={searchText}
-              onChangeText={setSearchText}
-              placeholder="Tìm khóa học..."
-            />
+            <View style={{ marginTop: 17 }}>
+              <SearchBar
+                value={searchText}
+                onChangeText={setSearchText}
+                placeholder="Tìm khóa học..."
+              />
+            </View>
 
             {/* Carousel */}
             <Carousel
