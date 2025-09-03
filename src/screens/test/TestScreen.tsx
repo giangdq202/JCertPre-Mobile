@@ -656,7 +656,7 @@ const TestScreen: React.FC = () => {
                 onPress={() => handleViewHistory(testOption)}
               >
                 <Icon name="clock" size={16} color="#6B7280" />
-                <Text style={styles.historyButtonText}>Xem lịch sử</Text>
+                {/* <Text style={styles.historyButtonText}>Xem lịch sử</Text> */}
               </TouchableOpacity>
             </View>
           ))}
@@ -726,6 +726,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: "#111827",
     marginBottom: 8,
+    marginTop: 20,
   },
   subtitle: {
     fontSize: 16,

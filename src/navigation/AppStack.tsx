@@ -10,6 +10,12 @@ import BottomTabNavigator from "./BottomTabNavigator";
 import FlashcardScreen from "../screens/flashcard/FlashcardScreen";
 import FlashcardDetailScreen from "../screens/flashcard/FlashcardDetailScreen";
 
+// Grammar
+import GrammarScreen from "../screens/grammar/GrammarScreen";
+import GrammarDetailScreen from "../screens/grammar/GrammarDetailScreen";
+
+import AlphabetScreen from "../screens/alphabet/AlphabetScreen";
+
 // Course
 import CourseDetailScreen from "../screens/course/CourseDetailScreen";
 import LearnCourseScreen from "../screens/course/LearnCourseScreen";
@@ -44,6 +50,16 @@ const AppStack = () => {
       {/* Flashcard */}
       <Stack.Screen name="Flashcard" component={FlashcardScreen} />
       <Stack.Screen name="FlashcardDetail" component={FlashcardDetailScreen} />
+
+      {/* Grammar */}
+      <Stack.Screen name="Grammar" component={GrammarScreen} />
+      <Stack.Screen name="GrammarDetail" component={GrammarDetailScreen} />
+
+      <Stack.Screen
+        name="Alphabet"
+        component={AlphabetScreen}
+        options={{ headerShown: false, title: "Bảng chữ cái" }}
+      />
 
       {/* Course */}
       <Stack.Screen name="CourseDetail" component={CourseDetailScreen} />

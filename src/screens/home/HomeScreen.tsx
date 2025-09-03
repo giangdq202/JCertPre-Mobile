@@ -46,7 +46,7 @@ const categories = [
     icon: "file-document-outline",
     color: "#FFB74D",
   },
-  { id: "3", title: "Kanji", icon: "translate", color: "#E57373" },
+  { id: "3", title: "Bảng chữ cái", icon: "translate", color: "#E57373" },
   { id: "4", title: "Quiz", icon: "brain", color: "#C0CA33" },
 ];
 
@@ -85,6 +85,10 @@ export default function HomeScreen() {
       onPress={() => {
         if (item.title === "Flashcard") {
           navigation.navigate("Flashcard");
+        } else if (item.title === "Ngữ pháp") {
+          navigation.navigate("Grammar");
+        } else if (item.title === "Bảng chữ cái") {
+          navigation.navigate("Alphabet");
         } else if (item.title === "Quiz") {
           navigation.navigate("QuizSetup");
         }
@@ -183,7 +187,7 @@ export default function HomeScreen() {
         contentContainerStyle={styles.contentContainer}
         ListHeaderComponent={
           <>
-            <View style={{ marginTop: 17 }}>
+            <View style={{ marginTop: 1 }}>
               <SearchBar
                 value={searchText}
                 onChangeText={setSearchText}

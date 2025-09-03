@@ -239,7 +239,11 @@ const FlashcardScreen = () => {
         <StatusBar barStyle="dark-content" backgroundColor="#F9F9F9" />
         <View style={styles.header}>
           <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
-            <MaterialCommunityIcons name="arrow-left" size={24} color="#333" />
+            <MaterialCommunityIcons
+              name="arrow-left"
+              size={26}
+              color="#f9f9f9"
+            />
           </Pressable>
           <Text style={styles.headerTitle}>Flashcard</Text>
         </View>
@@ -269,13 +273,8 @@ const styles = StyleSheet.create({
   },
   backBtn: {
     padding: 6,
-    borderRadius: 8,
-    backgroundColor: "#fefefe",
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOpacity: 0.12,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
+    borderRadius: 20,
+    backgroundColor: "rgba(255,255,255,0.2)",
   },
 
   headerTitle: {

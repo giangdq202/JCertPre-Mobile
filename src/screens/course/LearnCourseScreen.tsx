@@ -222,7 +222,7 @@ const LearnCourseScreen: React.FC = () => {
         </View>
       )} */}
 
-      {videoDoc ? (
+      {/* {videoDoc ? (
         <VideoLessonPlayer
           courseId={courseId}
           lessonId={selectedLessonId!}
@@ -234,11 +234,9 @@ const LearnCourseScreen: React.FC = () => {
           <TouchableOpacity
             style={styles.retryButton}
             onPress={fetchLessonResources}
-          >
-            <Text style={styles.retryButtonText}>🔄 Thử lại</Text>
-          </TouchableOpacity>
+          ></TouchableOpacity> */}
 
-          {/* 
+      {/* 
           // Demo video 
           <TouchableOpacity
             style={styles.demoButton}
@@ -257,8 +255,8 @@ const LearnCourseScreen: React.FC = () => {
             <Text style={styles.demoButtonText}>🎬 Xem video demo</Text>
           </TouchableOpacity>
           */}
-        </View>
-      )}
+      {/* </View>
+      )} */}
 
       {selectedLesson?.content && (
         <View style={styles.contentBox}>

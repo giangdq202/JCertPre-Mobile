@@ -25,6 +25,13 @@ export type AppStackParamList = {
   Flashcard: undefined;
   FlashcardDetail: { id: string };
 
+  // Grammar
+  Grammar: undefined;
+  GrammarDetail: { level: string; title: string };
+
+  // Alphabet
+  Alphabet: undefined;
+
   // Course
   CourseDetail: { course: Course };
   LearnCourse: { courseId: string };

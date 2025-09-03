@@ -23,6 +23,7 @@ type ProfileScreenNavProp = NativeStackNavigationProp<
 
 const ProfileScreen = () => {
   const { userInfo, handleLogout } = useAuth();
+
   const navigation = useNavigation<ProfileScreenNavProp>();
 
   const formatCurrency = (amount: number) =>
@@ -102,14 +103,14 @@ const ProfileScreen = () => {
           <Feather name="credit-card" size={28} color="#16a34a" />
           <View style={styles.cardText}>
             <Text style={styles.cardLabel}>Số dư Credit</Text>
-            <LinearGradient
+            {/* <LinearGradient
               colors={["#a7f3d0", "#6ee7b7"]}
               style={styles.creditValueWrapper}
             >
               <Text style={styles.cardValueWhite}>
                 {formatCurrency(userInfo?.credit || 0)}
               </Text>
-            </LinearGradient>
+            </LinearGradient> */}
           </View>
           <Feather
             name="chevron-right"
