@@ -1,4 +1,3 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import axiosInstance from '../const/axios/axiosInstance';
 import {
   GetRandomQuestionsRequestDto,
@@ -54,53 +53,6 @@ class QuizService {
       } else {
         throw new Error(error.message || 'Có lỗi xảy ra khi tải câu hỏi.');
       }
-    }
-  }
-
-  async submitQuizResults(result: QuizResult): Promise<void> {
-    try {
-      console.log('Submitting quiz results:', result);
-      
-      // Store results locally first
-      const existingResults = await this.getLocalQuizResults();
-      const updatedResults = [...existingResults, result];
-      await AsyncStorage.setItem('quizResults', JSON.stringify(updatedResults));
-      
-      // Try to submit to server (optional)
-      try {
-        await axiosInstance.post(`/quiz/results`, result, {
-          timeout: 5000,
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-        console.log('Quiz results submitted to server successfully');
-      } catch (serverError) {
-        console.warn('Failed to submit to server, saved locally:', serverError);
-      }
-      
-    } catch (error) {
-      console.error('Error submitting quiz results:', error);
-      // Don't throw error here as local storage is the fallback
-    }
-  }
-
-  async getLocalQuizResults(): Promise<QuizResult[]> {
-    try {
-      const results = await AsyncStorage.getItem('quizResults');
-      return results ? JSON.parse(results) : [];
-    } catch (error) {
-      console.error('Error getting local quiz results:', error);
-      return [];
-    }
-  }
-
-  async clearLocalQuizResults(): Promise<void> {
-    try {
-      await AsyncStorage.removeItem('quizResults');
-      console.log('Local quiz results cleared');
-    } catch (error) {
-      console.error('Error clearing local quiz results:', error);
     }
   }
 

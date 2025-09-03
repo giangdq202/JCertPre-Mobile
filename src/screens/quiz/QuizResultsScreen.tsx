@@ -52,11 +52,6 @@ const QuizResultsScreen: React.FC = () => {
   const correctAnswers = session.score;
   const wrongAnswers = session.questions.length - session.score;
 
-  const handleRetry = () => {
-    resetQuiz();
-    navigation.navigate("QuizSetup");
-  };
-
   const handleBackToHome = () => {
     resetQuiz();
     navigation.goBack();
@@ -362,11 +357,6 @@ const QuizResultsScreen: React.FC = () => {
 
           {/* Action Buttons */}
           <View style={styles.actionButtons}>
-            <TouchableOpacity onPress={handleRetry} style={styles.retryButton}>
-              <Text style={styles.actionButtonEmoji}>🔄</Text>
-              <Text style={styles.actionButtonText}>Xem lại câu hỏi</Text>
-            </TouchableOpacity>
-
             <TouchableOpacity
               onPress={handleBackToHome}
               style={styles.homeButton}
@@ -767,20 +757,6 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
 
-  retryButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 12,
-    paddingVertical: 18,
-    borderRadius: 16,
-    elevation: 6,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.2,
-    shadowRadius: 6,
-    backgroundColor: "#3B82F6",
-  },
   homeButton: {
     flexDirection: "row",
     alignItems: "center",
