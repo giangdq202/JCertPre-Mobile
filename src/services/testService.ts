@@ -1,4 +1,5 @@
 import axiosInstance from "../const/axios/axiosInstance";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   GET_TESTS_BY_USER_URL,
   GET_TEST_BY_LESSON_URL,
@@ -63,6 +64,7 @@ export interface GetTestsByUserIdParams {
 
 /**
  * Create test from template (alternative approach)
+ * NOTE: This endpoint may not exist in web version
  */
 export const createTestFromTemplate = async (
   templateId: string,
@@ -82,6 +84,7 @@ export const createTestFromTemplate = async (
     if (__DEV__) {
       console.log("Creating test from template with URL:", url);
       console.log("Payload:", payload);
+      console.log("WARNING: This endpoint may not exist in web version!");
     }
 
     const response = await axiosInstance.post(url, payload);
@@ -111,33 +114,31 @@ export const createAutoTest = async (
   userId: string
 ): Promise<CreateAutoTestResult> => {
   try {
-    const queryParams = new URLSearchParams();
-    queryParams.append("userId", userId);
-    queryParams.append("testType", input.testType.toString());
-    queryParams.append("courseLevel", input.courseLevel.toString());
+    // Sử dụng endpoint giống web version
+    const url = `${TEST_BASE_URL}/auto-create?userId=${userId}`;
 
-    const url = `${TEST_BASE_URL}/auto-create?${queryParams.toString()}`;
+    // Gửi payload giống web version (chỉ testType và courseLevel)
+    const payload = {
+      testType: input.testType,
+      courseLevel: input.courseLevel,
+    };
 
     if (__DEV__) {
-      console.log("Creating auto test with URL:", url);
-      console.log("Input:", input);
+      console.log("Creating auto test with payload:", payload);
+      console.log("API URL:", url);
+
+      // Debug authentication
+      const accessToken = await AsyncStorage.getItem("accessToken");
+      console.log("Access token exists:", !!accessToken);
+      if (accessToken) {
+        console.log(
+          "Access token preview:",
+          accessToken.substring(0, 20) + "..."
+        );
+      }
     }
 
-    // Try POST first
-    let response;
-    try {
-      response = await axiosInstance.post(url, {});
-    } catch (postError: any) {
-      if (__DEV__) {
-        console.log("POST failed, trying GET:", postError.response?.status);
-      }
-      // If POST fails with 405, try GET
-      if (postError.response?.status === 405) {
-        response = await axiosInstance.get(url);
-      } else {
-        throw postError;
-      }
-    }
+    const response = await axiosInstance.post(url, payload);
 
     if (__DEV__) {
       console.log("Auto test creation response:", response.data);

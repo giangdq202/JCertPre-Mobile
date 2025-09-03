@@ -1,6 +1,7 @@
 import { Pagination } from "../types/pagination";
 import { LessonDto } from "../types/lessonDto";
 import axiosInstance from "../const/axios/axiosInstance";
+import { GET_LESSONS_BY_COURSE_URL } from "../const/apiUrl/baseUrl";
 
 /**
  * Lấy danh sách bài học theo ID khóa học (có phân trang)
@@ -12,8 +13,10 @@ export async function getLessonsByCourseId(
   pageSize: number = 10
 ): Promise<Pagination<LessonDto>> {
   try {
+    const url = GET_LESSONS_BY_COURSE_URL(courseId);
+    console.log("🔍 Fetching lessons from:", url);
     const response = await axiosInstance.get<Pagination<LessonDto>>(
-      `/lessons/by-course/${courseId}`,
+      url,
       {
         params: {
           searchTerm,
@@ -23,10 +26,10 @@ export async function getLessonsByCourseId(
       }
     );
 
-    console.log("API /lessons/by-course response:", response.data);
+    console.log("📚 API /lessons/by-course response:", response.data);
     return response.data;
   } catch (error) {
-    console.error("getLessonsByCourseId error:", error);
+    console.error("❌ getLessonsByCourseId error:", error);
     throw error;
   }
 }

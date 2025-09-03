@@ -1,5 +1,9 @@
 import axiosInstance from "../const/axios/axiosInstance";
 import {
+  GET_LESSON_PROGRESS_BY_USER_COURSE_URL,
+  GET_COMPLETION_RATE_URL,
+} from "../const/apiUrl/baseUrl";
+import {
   LessonProgressDto,
   CreateLessonProgressDto,
   UpdateLessonProgressDto,
@@ -12,14 +16,12 @@ import {
 export type { LessonProgressDto };
 
 // --- API URLs ---
-const GET_PROGRESS_BY_USER_COURSE = "/lesson-progress/by-user-course";
 const GET_PROGRESS_BY_USER_LESSON = "/lesson-progress/by-user-lesson";
 const CREATE_PROGRESS = "/lesson-progress";
 const UPDATE_PROGRESS = (progressId: string) =>
   `/lesson-progress/${progressId}`;
 const DELETE_PROGRESS = (progressId: string) =>
   `/lesson-progress/${progressId}`;
-const GET_COMPLETION_RATE = "/lesson-progress/completion-rate";
 
 // --- Helper ---
 const clampRate = (rate: number) => Math.max(0, Math.min(100, rate));
@@ -32,7 +34,7 @@ export const getLessonProgressByUserAndCourse = async (
   courseId: string
 ): Promise<LessonProgressDto[]> => {
   const { data } = await axiosInstance.get<LessonProgressDto[]>(
-    GET_PROGRESS_BY_USER_COURSE,
+    GET_LESSON_PROGRESS_BY_USER_COURSE_URL,
     { params: { userId, courseId } }
   );
   return data;
@@ -108,7 +110,7 @@ export const getUserCourseCompletionRate = async (
   userId: string,
   courseId: string
 ): Promise<number> => {
-  const { data } = await axiosInstance.get<number>(GET_COMPLETION_RATE, {
+  const { data } = await axiosInstance.get<number>(GET_COMPLETION_RATE_URL, {
     params: { userId, courseId },
   });
   return data;

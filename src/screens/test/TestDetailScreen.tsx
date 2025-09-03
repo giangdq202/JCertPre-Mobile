@@ -38,6 +38,7 @@ import {
   TestQuestionDto,
 } from "../../services/testQuestionService";
 import { getQuestionById } from "../../services/questionService";
+
 import { addOrUpdateAttemptAnswer } from "../../services/attemptAnswerService";
 import {
   updateStudentLevel,
@@ -211,7 +212,9 @@ const TestDetailScreen: React.FC = () => {
   // Load question details
   const loadQuestion = async (questionId: string) => {
     try {
+      // COMMENTED OUT DEMO/FALLBACK LOGIC - FORCE REAL API CALLS
       // Check if this is a mock question
+      /*
       if (questionId.startsWith("mock_")) {
         // Find the mock question data
         const mockQuestion = mockQuestionData.current.get(questionId);
@@ -220,9 +223,13 @@ const TestDetailScreen: React.FC = () => {
           return;
         }
       }
+      */
 
       // Load real question from API
+      console.log("Loading question details for questionId:", questionId);
       const questionDetail = await getQuestionById(questionId);
+      console.log("Question detail fetched:", questionDetail);
+
       const convertedQuestion: QuestionWithChoices = {
         ...questionDetail,
         choices: questionDetail.choices?.map((choice) => ({
@@ -231,9 +238,10 @@ const TestDetailScreen: React.FC = () => {
           isCorrect: choice.isCorrect,
         })),
       };
+      console.log("Converted question:", convertedQuestion);
       setCurrentQuestion(convertedQuestion);
     } catch (err) {
-      // console.error("Failed to load question:", err);
+      console.error("Failed to load question:", err);
       Alert.alert("Lỗi", "Không thể tải chi tiết câu hỏi");
     }
   };
@@ -322,7 +330,9 @@ const TestDetailScreen: React.FC = () => {
 
       let createdTestResult;
 
+      // COMMENTED OUT DEMO/FALLBACK LOGIC - FORCE REAL API CALLS
       // Check if this is a fallback test option (no templates)
+      /*
       if (!testOption.templates || testOption.templates.length === 0) {
         console.log(
           "Fallback test option detected, creating basic test structure"
@@ -335,51 +345,57 @@ const TestDetailScreen: React.FC = () => {
           description: `Bài thi ${testOption.title} cơ bản (chế độ fallback)`,
         };
       } else {
-        try {
-          createdTestResult = await createAutoTest(autoTestInput, userInfo.id);
-        } catch (createError: any) {
+      */
+      // Try auto-create first (like web version)
+      try {
+        console.log("Trying auto-create first (like web version)...");
+        createdTestResult = await createAutoTest(autoTestInput, userInfo.id);
+        console.log("Auto-create succeeded:", createdTestResult);
+      } catch (createError: any) {
+        console.log("Auto-create failed:", createError);
+
+        // Check if it's a 403 error (permission denied)
+        if (createError?.response?.status === 403) {
           console.log(
-            "Auto test creation failed, trying template approach:",
-            createError
+            "403 Forbidden - User may not have permission to create auto test"
+          );
+          throw new Error(
+            "Bạn không có quyền tạo bài thi tự động. Vui lòng liên hệ quản trị viên để được cấp quyền."
+          );
+        }
+
+        // If auto-create fails, try template-based approach as fallback
+        if (testOption.templates && testOption.templates.length > 0) {
+          const firstTemplate = testOption.templates[0];
+          console.log(
+            "Trying template-based approach as fallback:",
+            firstTemplate
           );
 
-          // If auto-create fails, try using the first available template
-          if (testOption.templates && testOption.templates.length > 0) {
-            const firstTemplate = testOption.templates[0];
-            console.log("Using template fallback:", firstTemplate);
-
-            try {
-              createdTestResult = await createTestFromTemplate(
-                firstTemplate.templateId,
-                userInfo.id,
-                testOption.testType,
-                testOption.courseLevel
-              );
-            } catch (templateError: any) {
-              console.log("Template approach also failed:", templateError);
-
-              // Create a mock test result as last resort
-              createdTestResult = {
-                testId: `template_${firstTemplate.templateId}_${Date.now()}`,
-                title: testOption.title,
-                description: `Bài thi ${testOption.title} được tạo từ template`,
-              };
-            }
-          } else {
-            // If no templates available, create a basic test structure
-            console.log(
-              "No templates available, creating basic test structure"
+          try {
+            createdTestResult = await createTestFromTemplate(
+              firstTemplate.templateId,
+              userInfo.id,
+              testOption.testType,
+              testOption.courseLevel
             );
-            createdTestResult = {
-              testId: `basic_${testOption.testType}_${
-                testOption.courseLevel
-              }_${Date.now()}`,
-              title: testOption.title,
-              description: `Bài thi ${testOption.title} cơ bản`,
-            };
+            console.log(
+              "Template-based test created successfully:",
+              createdTestResult
+            );
+          } catch (templateError: any) {
+            console.log("Template approach also failed:", templateError);
+            throw templateError;
           }
+        } else {
+          // If no templates and auto-create fails, throw error
+          console.log("No templates available and auto-create failed");
+          throw new Error(
+            "Không có mẫu đề thi cho loại bài thi này. Vui lòng liên hệ quản trị viên để thiết lập mẫu đề thi."
+          );
         }
       }
+      // }
 
       // Convert CreateAutoTestResult to TestDto format
       const createdTest = {
@@ -402,7 +418,9 @@ const TestDetailScreen: React.FC = () => {
       // Step 2: Start test attempt
       let attempt: TestAttemptDto;
 
+      // COMMENTED OUT DEMO/FALLBACK LOGIC - FORCE REAL API CALLS
       // Check if this is a fallback test - skip API call
+      /*
       if (createdTest.testId.startsWith("fallback_")) {
         console.log("Fallback test detected, creating mock test attempt");
         attempt = {
@@ -417,22 +435,25 @@ const TestDetailScreen: React.FC = () => {
         };
         setTestAttempt(attempt);
       } else {
-        try {
-          attempt = await startTestAttempt({
-            testId: createdTest.testId,
-            userId: userInfo.id,
-          });
-          setTestAttempt(attempt);
-        } catch (attemptError: any) {
-          console.log("Failed to start test attempt:", attemptError);
-          throw attemptError;
-        }
+      */
+      try {
+        attempt = await startTestAttempt({
+          testId: createdTest.testId,
+          userId: userInfo.id,
+        });
+        setTestAttempt(attempt);
+      } catch (attemptError: any) {
+        console.log("Failed to start test attempt:", attemptError);
+        throw attemptError;
       }
+      // }
 
       // Step 3: Get all test questions
       let questions: TestQuestionDto[] = [];
 
+      // COMMENTED OUT DEMO/FALLBACK LOGIC - FORCE REAL API CALLS
       // Check if this is a fallback test - skip API call
+      /*
       if (createdTest.testId.startsWith("fallback_")) {
         console.log("Fallback test detected, creating mock questions");
         questions = createMockQuestions(
@@ -441,14 +462,20 @@ const TestDetailScreen: React.FC = () => {
         );
         setTestQuestions(questions);
       } else {
-        try {
-          questions = await getQuestionsByTestId(createdTest.testId);
-          setTestQuestions(questions);
-        } catch (questionError: any) {
-          console.log("Failed to get test questions:", questionError);
-          throw questionError;
-        }
+      */
+      try {
+        console.log(
+          "Fetching real questions from API for testId:",
+          createdTest.testId
+        );
+        questions = await getQuestionsByTestId(createdTest.testId);
+        console.log("Questions fetched from API:", questions);
+        setTestQuestions(questions);
+      } catch (questionError: any) {
+        console.log("Failed to get test questions:", questionError);
+        throw questionError;
       }
+      // }
 
       // Step 4: Group questions by parts
       const parts = groupQuestionsByParts(questions);
@@ -464,9 +491,16 @@ const TestDetailScreen: React.FC = () => {
 
       // Step 6: Load first question
       if (parts[0]?.questions[0]) {
+        console.log(
+          "Loading first question:",
+          parts[0].questions[0].questionId
+        );
         await loadQuestion(parts[0].questions[0].questionId);
+      } else {
+        console.log("No questions found in parts:", parts);
       }
 
+      console.log("Test initialization completed successfully");
       Alert.alert("Thành công", "Bài thi đã được khởi tạo thành công");
     } catch (err: any) {
       console.log("Failed to initialize test:", err);
@@ -505,6 +539,9 @@ const TestDetailScreen: React.FC = () => {
           "Lỗi hệ thống",
           "Có lỗi xảy ra trong hệ thống. Vui lòng thử lại sau."
         );
+      } else if (err?.message) {
+        // Handle custom error messages
+        Alert.alert("Lỗi khởi tạo bài thi", err.message);
       } else {
         Alert.alert(
           "Lỗi khởi tạo bài thi",
@@ -598,19 +635,31 @@ const TestDetailScreen: React.FC = () => {
     setUserAnswers(newAnswers);
 
     try {
+      // COMMENTED OUT DEMO/FALLBACK LOGIC - FORCE REAL API CALLS
       // Skip API call for mock attempts
+      /*
       if (testAttempt.attemptId.startsWith("mock_attempt_")) {
         console.log("Mock attempt - skipping answer submission to API");
         return;
       }
+      */
+
+      console.log("Saving answer to API:", {
+        attemptId: testAttempt.attemptId,
+        questionId: questionId,
+        choiceId: choiceId,
+      });
 
       await addOrUpdateAttemptAnswer({
         attemptId: testAttempt.attemptId,
         questionId: questionId,
         choiceId: choiceId,
       });
+
+      console.log("Answer saved successfully");
     } catch (err) {
       console.error("Failed to save answer:", err);
+      Alert.alert("Lỗi", "Không thể lưu câu trả lời");
     }
   };
 
@@ -620,7 +669,9 @@ const TestDetailScreen: React.FC = () => {
 
     setSubmitting(true);
     try {
+      // COMMENTED OUT DEMO/FALLBACK LOGIC - FORCE REAL API CALLS
       // Handle mock attempt submission
+      /*
       if (testAttempt.attemptId.startsWith("mock_attempt_")) {
         console.log("Submitting mock test attempt");
 
@@ -679,8 +730,10 @@ const TestDetailScreen: React.FC = () => {
         );
         return;
       }
+      */
 
       // Handle real test submission
+      console.log("Submitting real test attempt:", testAttempt.attemptId);
       await submitTestAttempt({ attemptId: testAttempt.attemptId });
 
       const result = await getTestAttemptWithScoreSummary(
@@ -706,7 +759,9 @@ const TestDetailScreen: React.FC = () => {
   const handleAutoSubmit = useCallback(async () => {
     if (testAttempt && !submitting) {
       try {
+        // COMMENTED OUT DEMO/FALLBACK LOGIC - FORCE REAL API CALLS
         // Handle mock attempt auto submission
+        /*
         if (testAttempt.attemptId.startsWith("mock_attempt_")) {
           console.log("Auto submitting mock test attempt");
 
@@ -765,8 +820,13 @@ const TestDetailScreen: React.FC = () => {
           );
           return;
         }
+        */
 
         // Handle real test auto submission
+        console.log(
+          "Auto submitting real test attempt:",
+          testAttempt.attemptId
+        );
         await submitTestAttempt({ attemptId: testAttempt.attemptId });
 
         const result = await getTestAttemptWithScoreSummary(

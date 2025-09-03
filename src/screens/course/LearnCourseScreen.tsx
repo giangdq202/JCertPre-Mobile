@@ -38,6 +38,16 @@ type RootStackParamList = {
   LearnCourse: { courseId: string };
 };
 
+// Helper: nhận diện video từ url
+const isVideoFile = (url?: string) => {
+  if (!url) return false;
+  return (
+    /\.(mp4|mov|m3u8|webm)(\?|$)/i.test(url) ||
+    url.includes("youtube.com") ||
+    url.includes("vimeo.com")
+  );
+};
+
 const LearnCourseScreen: React.FC = () => {
   const route = useRoute<RouteProp<RootStackParamList, "LearnCourse">>();
   const { courseId } = route.params;
@@ -65,27 +75,25 @@ const LearnCourseScreen: React.FC = () => {
     [course?.endDate]
   );
 
-  /** Fetch toàn bộ dữ liệu khóa học và bài học */
+  /** Fetch toàn bộ dữ liệu khóa học */
   const fetchCourseData = useCallback(async () => {
     if (!courseId || authLoading || !userInfo?.id) return;
     setLoading(true);
 
     try {
-      // Lấy thông tin khóa học
       const courseData = await getCourseById(courseId);
       setCourse(courseData);
 
-      // Lấy danh sách bài học (sửa lỗi: dùng .items)
       const lessonResponse = await getLessonsByCourseId(courseId);
-      const lessonsData = lessonResponse.items || [];
+      const lessonsData = Array.isArray(lessonResponse?.items)
+        ? lessonResponse.items
+        : [];
       setLessons(lessonsData);
 
-      // Chọn bài học đầu tiên mặc định
       if (lessonsData.length > 0) {
         setSelectedLessonId(lessonsData[0].lessonId);
       }
 
-      // Lấy tiến độ bài học
       const progressMap: Record<string, number> = {};
       await Promise.all(
         lessonsData.map(async (lesson) => {
@@ -102,11 +110,9 @@ const LearnCourseScreen: React.FC = () => {
       );
       setLessonProgress(progressMap);
 
-      // Lấy danh sách bài test đã làm
       const attempts = await getAllTestAttemptsByUserId(userInfo.id);
       setTestAttempts(attempts || []);
 
-      // Đánh dấu bài test đã pass
       const passedSet = new Set<string>();
       attempts?.forEach((a) => {
         if (a.status === TestAttemptStatus.Completed && a.isPass) {
@@ -115,7 +121,7 @@ const LearnCourseScreen: React.FC = () => {
       });
       setPassedTestIds(passedSet);
     } catch (error) {
-      console.error("Error fetching course data:", error);
+      console.error("❌ Error fetching course data:", error);
       setCourse(null);
       setLessons([]);
     } finally {
@@ -123,21 +129,16 @@ const LearnCourseScreen: React.FC = () => {
     }
   }, [courseId, authLoading, userInfo?.id]);
 
-  /** Fetch tài nguyên của bài học */
+  /** Fetch tài nguyên bài học */
   const fetchLessonResources = useCallback(async () => {
     if (!selectedLessonId) return;
-
     try {
       const docs = await getDocumentsByLessonId(selectedLessonId);
       setDocuments(docs || []);
 
-      // Lấy video đầu tiên (hỗ trợ URL có querystring và nhiều định dạng)
-      const video = docs?.find((d) =>
-        /\.(mp4|mov|m3u8|webm)(\?|$)/i.test(d.fileUrl || "")
-      );
+      const video = docs?.find((d) => isVideoFile(d.fileUrl));
       setVideoDoc(video || null);
 
-      // Lấy bài test nếu chưa có
       if (!lessonTests[selectedLessonId]) {
         try {
           const test = await getByLessonId(selectedLessonId);
@@ -150,11 +151,11 @@ const LearnCourseScreen: React.FC = () => {
         }
       }
     } catch (error) {
-      console.error("Error fetching lesson resources:", error);
+      console.error("❌ Error fetching lesson resources:", error);
       setDocuments([]);
       setVideoDoc(null);
     }
-  }, [selectedLessonId, lessonTests]);
+  }, [selectedLessonId]);
 
   useEffect(() => {
     fetchCourseData();
@@ -202,6 +203,25 @@ const LearnCourseScreen: React.FC = () => {
 
       <Text style={styles.lessonTitle}>{selectedLesson?.title}</Text>
 
+      {/* Debug chỉ hiển thị khi dev */}
+      {__DEV__ && (
+        <View style={styles.debugBox}>
+          <Text style={styles.debugText}>🔍 Debug Info:</Text>
+          <Text style={styles.debugText}>
+            Selected Lesson ID: {selectedLessonId}
+          </Text>
+          <Text style={styles.debugText}>
+            Video Doc: {videoDoc ? "Found" : "Not found"}
+          </Text>
+          <Text style={styles.debugText}>
+            Documents Count: {documents.length}
+          </Text>
+          {videoDoc && (
+            <Text style={styles.debugText}>Video URL: {videoDoc.fileUrl}</Text>
+          )}
+        </View>
+      )}
+
       {videoDoc ? (
         <VideoLessonPlayer
           courseId={courseId}
@@ -210,7 +230,33 @@ const LearnCourseScreen: React.FC = () => {
         />
       ) : (
         <View style={styles.noVideoBox}>
-          <Text>Không có video cho bài học này</Text>
+          <Text style={styles.noVideoText}>Không có video cho bài học này</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={fetchLessonResources}
+          >
+            <Text style={styles.retryButtonText}>🔄 Thử lại</Text>
+          </TouchableOpacity>
+
+          {/* 
+          // Demo video (comment theo yêu cầu)
+          <TouchableOpacity
+            style={styles.demoButton}
+            onPress={() => {
+              const demoVideo = {
+                documentId: "demo-video",
+                lessonId: selectedLessonId!,
+                documentName: "Video Demo",
+                fileUrl:
+                  "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+                uploadedAt: new Date().toISOString(),
+              };
+              setVideoDoc(demoVideo);
+            }}
+          >
+            <Text style={styles.demoButtonText}>🎬 Xem video demo</Text>
+          </TouchableOpacity>
+          */}
         </View>
       )}
 
@@ -220,15 +266,11 @@ const LearnCourseScreen: React.FC = () => {
         </View>
       )}
 
-      {documents.filter(
-        (d) => !/\.(mp4|mov|m3u8|webm)(\?|$)/i.test(d.fileUrl || "")
-      ).length > 0 && (
+      {documents.filter((d) => !isVideoFile(d.fileUrl)).length > 0 && (
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Tài liệu</Text>
           {documents
-            .filter(
-              (d) => !/\.(mp4|mov|m3u8|webm)(\?|$)/i.test(d.fileUrl || "")
-            )
+            .filter((d) => !isVideoFile(d.fileUrl))
             .map((doc, i) => (
               <TouchableOpacity
                 key={doc.documentId}
@@ -354,6 +396,51 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFF",
   },
   selectedLesson: { backgroundColor: "#E0F7FA" },
+  debugBox: {
+    backgroundColor: "#FFF3CD",
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#FFEAA7",
+  },
+  debugText: {
+    fontSize: 12,
+    color: "#856404",
+    marginBottom: 4,
+  },
+  retryButton: {
+    backgroundColor: "#3B82F6",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginTop: 12,
+  },
+  retryButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+  noVideoText: {
+    fontSize: 16,
+    color: "#6B7280",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  demoButton: {
+    backgroundColor: "#10B981",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  demoButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "bold",
+    textAlign: "center",
+  },
 });
 
 export default LearnCourseScreen;

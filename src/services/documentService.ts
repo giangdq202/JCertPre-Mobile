@@ -1,12 +1,13 @@
 import axiosInstance from "../const/axios/axiosInstance";
 
+// ================== BASE URL ==================
 const BASE_DOCUMENTS_URL = "/documents";
 
 /**
  * Represents a Document data transfer object.
  */
 export interface DocumentDto {
-  documentId: string;
+  documentId: string; // Guid trong C# => string trong TypeScript
   lessonId: string;
   documentName: string;
   fileUrl: string;
@@ -24,7 +25,7 @@ export const getDocumentById = async (id: string): Promise<DocumentDto> => {
     );
     return response.data;
   } catch (error) {
-    console.error(`Error fetching document ${id}:`, error);
+    console.error(`❌ Error fetching document ${id}:`, error);
     throw error;
   }
 };
@@ -42,7 +43,7 @@ export const getDocumentsByLessonId = async (
     );
     return response.data;
   } catch (error) {
-    console.error(`Error fetching documents for lesson ${lessonId}:`, error);
+    console.error(`❌ Error fetching documents for lesson ${lessonId}:`, error);
     throw error;
   }
 };

@@ -43,15 +43,18 @@ export const VideoLessonPlayer: React.FC<VideoLessonPlayerProps> = ({
     }
   };
 
-  /** Toggle Play */
+  /** Play / Pause */
   const togglePlayPause = async () => {
     if (!videoRef.current) return;
-    if (isPlaying) await videoRef.current.pauseAsync();
-    else await videoRef.current.playAsync();
+    if (isPlaying) {
+      await videoRef.current.pauseAsync();
+    } else {
+      await videoRef.current.playAsync();
+    }
     setIsPlaying(!isPlaying);
   };
 
-  /** Toggle Mute */
+  /** Mute / Unmute */
   const toggleMute = async () => {
     if (!videoRef.current) return;
     const newMuted = !isMuted;
@@ -66,7 +69,7 @@ export const VideoLessonPlayer: React.FC<VideoLessonPlayerProps> = ({
     setCurrentTime(value);
   };
 
-  /** Thay đổi âm lượng */
+  /** Volume */
   const handleVolumeChange = async (value: number) => {
     setVolume(value);
     if (videoRef.current) {
@@ -97,7 +100,10 @@ export const VideoLessonPlayer: React.FC<VideoLessonPlayerProps> = ({
       {/* 🎬 Video Player */}
       <Video
         ref={videoRef}
-        source={{ uri: videoUrl }}
+        source={{
+          uri: videoUrl ? videoUrl + ".mp4" : "",
+          overrideFileExtensionAndroid: "mp4",
+        }}
         style={styles.video}
         resizeMode={ResizeMode.CONTAIN}
         useNativeControls={false}
@@ -105,8 +111,8 @@ export const VideoLessonPlayer: React.FC<VideoLessonPlayerProps> = ({
         onLoad={() => setLoading(false)}
         onPlaybackStatusUpdate={handlePlaybackStatusUpdate}
         onError={(e) => {
-          // console.error("Video error:", e);
           setLoading(false);
+          console.log("❌ Video error:", JSON.stringify(e, null, 2));
           Alert.alert("Lỗi", "Không thể phát video.");
         }}
       />
