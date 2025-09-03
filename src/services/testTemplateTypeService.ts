@@ -16,7 +16,7 @@ export enum TestType {
 }
 
 /**
- * Test Template Type DTO (for student)
+ * Test Template Type DTO
  */
 export interface TestTemplateTypeDto {
   testTemplateTypeId: string;
@@ -97,7 +97,6 @@ export const getAllTestTemplateTypes = async (
 
     return response.data;
   } catch (error: any) {
-    // Chỉ log trong development, không hiển thị popup
     if (__DEV__) {
       console.log(
         "Failed to get test template types for student (mobile):",

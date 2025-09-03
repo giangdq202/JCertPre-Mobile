@@ -29,7 +29,7 @@ export interface UpdateTestTemplateDto {
 }
 
 /**
- * Get all test templates by testTemplateTypeId (student)
+ * Get all test templates by testTemplateTypeId
  */
 export const getAllByTypeId = async (
   testTemplateTypeId: string
