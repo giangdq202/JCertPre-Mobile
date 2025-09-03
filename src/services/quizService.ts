@@ -5,15 +5,15 @@ import {
   QuizResult,
   ContentName,
   CourseLevel,
-  SubContentName
-} from '../types/quiz';
+  SubContentName,
+} from "../types/quiz";
 
 class QuizService {
   async fetchRandomQuestions(request: GetRandomQuestionsRequestDto): Promise<RandomQuestionWithChoicesDto[]> {
     try {
       console.log('Fetching random questions with request:', request);
       
-      // Call real API
+      // Call real API using authenticated axiosInstance
       const response = await axiosInstance.post<RandomQuestionWithChoicesDto[]>(
         `/questions/random`,
         {
@@ -59,44 +59,44 @@ class QuizService {
   // Helper methods for content mapping
   getContentNameLabel(contentName: ContentName): string {
     const labels = {
-      [ContentName.Kanji]: 'Chữ Hán',
-      [ContentName.Vocabulary]: 'Từ Vựng',
-      [ContentName.Grammar]: 'Ngữ Pháp',
-      [ContentName.Reading]: 'Đọc Hiểu',
-      [ContentName.Listening]: 'Nghe Hiểu',
+      [ContentName.Kanji]: "Chữ Hán",
+      [ContentName.Vocabulary]: "Từ Vựng",
+      [ContentName.Grammar]: "Ngữ Pháp",
+      [ContentName.Reading]: "Đọc Hiểu",
+      [ContentName.Listening]: "Nghe Hiểu",
     };
-    return labels[contentName] || 'Unknown';
+    return labels[contentName] || "Unknown";
   }
 
   getCourseLevelLabel(level: CourseLevel): string {
     const labels = {
-      [CourseLevel.N5]: 'N5',
-      [CourseLevel.N4]: 'N4',
-      [CourseLevel.N3]: 'N3',
-      [CourseLevel.N2]: 'N2',
-      [CourseLevel.N1]: 'N1',
+      [CourseLevel.N5]: "N5",
+      [CourseLevel.N4]: "N4",
+      [CourseLevel.N3]: "N3",
+      [CourseLevel.N2]: "N2",
+      [CourseLevel.N1]: "N1",
     };
-    return labels[level] || 'Unknown';
+    return labels[level] || "Unknown";
   }
 
   getSubContentNameLabel(subContentName: SubContentName): string {
     const labels = {
-      [SubContentName.Mondai1]: 'Đọc chữ Hán',
-      [SubContentName.Mondai2]: 'Nhớ chữ Hán',
-      [SubContentName.Mondai3]: 'Chọn từ phù hợp với câu',
-      [SubContentName.Mondai4]: 'Tìm câu có cách diễn đạt giống',
-      [SubContentName.Mondai5]: 'Chọn ngữ pháp phù hợp với câu',
-      [SubContentName.Mondai6]: 'Sắp xếp câu',
-      [SubContentName.Mondai7]: 'Tìm đáp án đúng để hoàn thành đoạn văn',
-      [SubContentName.Mondai8]: 'Đoạn văn ngắn',
-      [SubContentName.Mondai9]: 'Trung văn',
-      [SubContentName.Mondai10]: 'Tìm kiếm thông tin',
-      [SubContentName.Mondai11]: 'Hiểu đề bài',
-      [SubContentName.Mondai12]: 'Hiểu điểm chính',
-      [SubContentName.Mondai13]: 'Diễn đạt bằng lời nói',
-      [SubContentName.Mondai14]: 'Phản hồi tức thời',
+      [SubContentName.Mondai1]: "Đọc chữ Hán",
+      [SubContentName.Mondai2]: "Nhớ chữ Hán",
+      [SubContentName.Mondai3]: "Chọn từ phù hợp với câu",
+      [SubContentName.Mondai4]: "Tìm câu có cách diễn đạt giống",
+      [SubContentName.Mondai5]: "Chọn ngữ pháp phù hợp với câu",
+      [SubContentName.Mondai6]: "Sắp xếp câu",
+      [SubContentName.Mondai7]: "Tìm đáp án đúng để hoàn thành đoạn văn",
+      [SubContentName.Mondai8]: "Đoạn văn ngắn",
+      [SubContentName.Mondai9]: "Trung văn",
+      [SubContentName.Mondai10]: "Tìm kiếm thông tin",
+      [SubContentName.Mondai11]: "Hiểu đề bài",
+      [SubContentName.Mondai12]: "Hiểu điểm chính",
+      [SubContentName.Mondai13]: "Diễn đạt bằng lời nói",
+      [SubContentName.Mondai14]: "Phản hồi tức thời",
     };
-    return labels[subContentName] || 'Unknown';
+    return labels[subContentName] || "Unknown";
   }
 }
 

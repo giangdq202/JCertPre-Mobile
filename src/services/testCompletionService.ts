@@ -55,7 +55,7 @@ export const canUserProceedToNextLesson = async (
   userId: string,
   testId?: string
 ): Promise<boolean> => {
-  if (!testId) return true; // không có test, cho phép qua
+  if (!testId) return true; 
   return await hasUserPassedTest(userId, testId);
 };
 

@@ -23,6 +23,7 @@ import {
   CourseListDto,
   CourseQueryParameters,
 } from "../../services/courseService";
+import SearchBar from "../../components/SearchBar";
 
 const { width } = Dimensions.get("window");
 
@@ -182,23 +183,11 @@ export default function HomeScreen() {
         contentContainerStyle={styles.contentContainer}
         ListHeaderComponent={
           <>
-            {/* Search */}
-            <View style={styles.searchContainer}>
-              <MaterialCommunityIcons
-                name="magnify"
-                size={20}
-                color="#777"
-                style={styles.searchIcon}
-              />
-              <TextInput
-                placeholder="Tìm kiếm khóa học, từ vựng..."
-                style={styles.searchInput}
-                value={searchText}
-                onChangeText={setSearchText}
-                placeholderTextColor="#777"
-                keyboardType="default"
-              />
-            </View>
+            <SearchBar
+              value={searchText}
+              onChangeText={setSearchText}
+              placeholder="Tìm khóa học..."
+            />
 
             {/* Carousel */}
             <Carousel

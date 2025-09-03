@@ -23,7 +23,6 @@ import {
   TestType,
   CourseLevel,
   createAutoTest,
-  createTestFromTemplate,
   CreateAutoTestInput,
 } from "../../services/testService";
 import {
@@ -325,75 +324,22 @@ const TestDetailScreen: React.FC = () => {
         courseLevel: testOption.courseLevel,
       };
 
-      console.log("CreateAutoTestInput:", autoTestInput);
-      console.log("TestOption templates:", testOption.templates);
-
       let createdTestResult;
 
-      // COMMENTED OUT DEMO/FALLBACK LOGIC - FORCE REAL API CALLS
-      // Check if this is a fallback test option (no templates)
-      /*
-      if (!testOption.templates || testOption.templates.length === 0) {
-        console.log(
-          "Fallback test option detected, creating basic test structure"
-        );
-        createdTestResult = {
-          testId: `fallback_${testOption.testType}_${
-            testOption.courseLevel
-          }_${Date.now()}`,
-          title: testOption.title,
-          description: `Bài thi ${testOption.title} cơ bản (chế độ fallback)`,
-        };
-      } else {
-      */
-      // Try auto-create first (like web version)
+      // Chỉ còn auto-create, không còn fallback template
       try {
-        console.log("Trying auto-create first (like web version)...");
         createdTestResult = await createAutoTest(autoTestInput, userInfo.id);
-        console.log("Auto-create succeeded:", createdTestResult);
       } catch (createError: any) {
-        console.log("Auto-create failed:", createError);
-
         // Check if it's a 403 error (permission denied)
         if (createError?.response?.status === 403) {
-          console.log(
-            "403 Forbidden - User may not have permission to create auto test"
-          );
           throw new Error(
             "Bạn không có quyền tạo bài thi tự động. Vui lòng liên hệ quản trị viên để được cấp quyền."
           );
         }
-
-        // If auto-create fails, try template-based approach as fallback
-        if (testOption.templates && testOption.templates.length > 0) {
-          const firstTemplate = testOption.templates[0];
-          console.log(
-            "Trying template-based approach as fallback:",
-            firstTemplate
-          );
-
-          try {
-            createdTestResult = await createTestFromTemplate(
-              firstTemplate.templateId,
-              userInfo.id,
-              testOption.testType,
-              testOption.courseLevel
-            );
-            console.log(
-              "Template-based test created successfully:",
-              createdTestResult
-            );
-          } catch (templateError: any) {
-            console.log("Template approach also failed:", templateError);
-            throw templateError;
-          }
-        } else {
-          // If no templates and auto-create fails, throw error
-          console.log("No templates available and auto-create failed");
-          throw new Error(
-            "Không có mẫu đề thi cho loại bài thi này. Vui lòng liên hệ quản trị viên để thiết lập mẫu đề thi."
-          );
-        }
+        // Nếu auto-create thất bại, báo lỗi luôn (không còn fallback template)
+        throw new Error(
+          "Không thể tạo bài thi tự động. Vui lòng liên hệ quản trị viên để thiết lập mẫu đề thi."
+        );
       }
       // }
 

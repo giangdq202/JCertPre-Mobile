@@ -63,50 +63,6 @@ export interface GetTestsByUserIdParams {
 }
 
 /**
- * Create test from template (alternative approach)
- * NOTE: This endpoint may not exist in web version
- */
-export const createTestFromTemplate = async (
-  templateId: string,
-  userId: string,
-  testType: TestType,
-  courseLevel: CourseLevel
-): Promise<CreateAutoTestResult> => {
-  try {
-    const url = `${TEST_BASE_URL}/create-from-template`;
-    const payload = {
-      templateId,
-      userId,
-      testType,
-      courseLevel,
-    };
-
-    if (__DEV__) {
-      console.log("Creating test from template with URL:", url);
-      console.log("Payload:", payload);
-      console.log("WARNING: This endpoint may not exist in web version!");
-    }
-
-    const response = await axiosInstance.post(url, payload);
-
-    if (__DEV__) {
-      console.log("Test from template creation response:", response.data);
-    }
-
-    return response.data;
-  } catch (error: any) {
-    if (__DEV__) {
-      console.log("Failed to create test from template:", error);
-      if (error.response) {
-        console.log("Response status:", error.response.status);
-        console.log("Response data:", error.response.data);
-      }
-    }
-    throw error;
-  }
-};
-
-/**
  * Create auto test
  */
 export const createAutoTest = async (
@@ -117,7 +73,7 @@ export const createAutoTest = async (
     // Sử dụng endpoint giống web version
     const url = `${TEST_BASE_URL}/auto-create?userId=${userId}`;
 
-    // Gửi payload giống web version (chỉ testType và courseLevel)
+    // Gửi payload giống web version 
     const payload = {
       testType: input.testType,
       courseLevel: input.courseLevel,
@@ -224,7 +180,6 @@ export const getByTestId = async (testId: string): Promise<TestDto | null> => {
 
 export default {
   createAutoTest,
-  createTestFromTemplate,
   getAllByUserId,
   getByLessonId,
   getByTestId,
