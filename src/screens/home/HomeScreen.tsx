@@ -187,7 +187,7 @@ export default function HomeScreen() {
         contentContainerStyle={styles.contentContainer}
         ListHeaderComponent={
           <>
-            <View style={{ marginTop: 1 }}>
+            <View style={{ marginTop: 18 }}>
               <SearchBar
                 value={searchText}
                 onChangeText={setSearchText}

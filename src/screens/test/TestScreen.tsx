@@ -651,13 +651,13 @@ const TestScreen: React.FC = () => {
                 <Text style={styles.startButtonText}>Bắt đầu làm bài</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 style={styles.historyButton}
                 onPress={() => handleViewHistory(testOption)}
               >
                 <Icon name="clock" size={16} color="#6B7280" />
-                {/* <Text style={styles.historyButtonText}>Xem lịch sử</Text> */}
-              </TouchableOpacity>
+                <Text style={styles.historyButtonText}>Xem lịch sử</Text>
+              </TouchableOpacity> */}
             </View>
           ))}
 
