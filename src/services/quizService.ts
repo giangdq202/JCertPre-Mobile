@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
+import axiosInstance from "../const/axios/axiosInstance";
 import {
   GetRandomQuestionsRequestDto,
   RandomQuestionWithChoicesDto,
@@ -8,91 +9,54 @@ import {
   CourseLevel,
   SubContentName,
 } from "../types/quiz";
-
-// Mock data for offline development
-const mockQuestions: RandomQuestionWithChoicesDto[] = [
-  {
-    questionId: "1",
-    questionText: 'Chọn cách đọc đúng của chữ Hán "学生"',
-    explanation:
-      '"学生" được đọc là "がくせい" (gakusei), có nghĩa là học sinh.',
-    choices: [
-      { choiceId: "1a", content: "がくせい", isCorrect: true },
-      { choiceId: "1b", content: "がくしょう", isCorrect: false },
-      { choiceId: "1c", content: "がくじょう", isCorrect: false },
-      { choiceId: "1d", content: "まなびせい", isCorrect: false },
-    ],
-  },
-  {
-    questionId: "2",
-    questionText: 'Chọn nghĩa đúng của từ "美しい"',
-    explanation: '"美しい" (utsukushii) có nghĩa là đẹp.',
-    choices: [
-      { choiceId: "2a", content: "xấu", isCorrect: false },
-      { choiceId: "2b", content: "đẹp", isCorrect: true },
-      { choiceId: "2c", content: "nhanh", isCorrect: false },
-      { choiceId: "2d", content: "chậm", isCorrect: false },
-    ],
-  },
-  {
-    questionId: "3",
-    questionText:
-      'Chọn ngữ pháp đúng để hoàn thành câu: "私は毎日__勉強します"',
-    explanation: 'Dùng "に" để chỉ thời gian cụ thể trong một ngày.',
-    choices: [
-      { choiceId: "3a", content: "で", isCorrect: false },
-      { choiceId: "3b", content: "に", isCorrect: true },
-      { choiceId: "3c", content: "を", isCorrect: false },
-      { choiceId: "3d", content: "が", isCorrect: false },
-    ],
-  },
-];
+import { BASE_URL } from "../const/apiUrl/baseUrl";
 
 class QuizService {
-  private baseURL = "https://your-api-base-url.com";
-
   async fetchRandomQuestions(
     request: GetRandomQuestionsRequestDto
   ): Promise<RandomQuestionWithChoicesDto[]> {
     try {
       console.log("Fetching random questions with request:", request);
 
-      // Try to call real API first
-      try {
-        const response = await axios.post<RandomQuestionWithChoicesDto[]>(
-          `${this.baseURL}/questions/random`,
-          {
-            numberOfQuestions: request.numberOfQuestions,
-            contentName: request.contentName,
-            level: request.level,
-            subContentName: request.subContentName,
+      const response = await axiosInstance.post<RandomQuestionWithChoicesDto[]>(
+        `/questions/random`,
+        {
+          numberOfQuestions: request.numberOfQuestions,
+          contentName: request.contentName,
+          level: request.level,
+          subContentName: request.subContentName,
+        },
+        {
+          timeout: 10000, // 10 second timeout
+          headers: {
+            "Content-Type": "application/json",
           },
-          {
-            timeout: 10000, // 10 second timeout
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        if (response.data && response.data.length > 0) {
-          console.log("Successfully fetched questions from API");
-          return response.data;
         }
-      } catch (apiError) {
-        console.warn("API call failed, using mock data:", apiError);
+      );
+
+      if (!response.data || response.data.length === 0) {
+        throw new Error("Không có câu hỏi nào được trả về từ server");
       }
 
-      // Fallback to mock data
-      console.log("Using mock data for questions");
-      const numberOfQuestions = Math.min(
-        request.numberOfQuestions,
-        mockQuestions.length
-      );
-      return mockQuestions.slice(0, numberOfQuestions);
+      console.log("Successfully fetched questions from API");
+      return response.data;
     } catch (error) {
       console.error("Error in fetchRandomQuestions:", error);
-      throw new Error("Không thể tải câu hỏi. Vui lòng kiểm tra kết nối mạng.");
+      
+      if (axios.isAxiosError(error)) {
+        if (error.response) {
+          // Server responded with error status
+          const statusCode = error.response.status;
+          const message = error.response.data?.message || "Lỗi từ server";
+          throw new Error(`Server error (${statusCode}): ${message}`);
+        } else if (error.request) {
+          // Network error - no response received
+          throw new Error("Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.");
+        }
+      }
+      
+      // Other errors
+      throw new Error("Không thể tải câu hỏi. Vui lòng thử lại sau.");
     }
   }
 
@@ -107,7 +71,7 @@ class QuizService {
 
       // Try to submit to server (optional)
       try {
-        await axios.post(`${this.baseURL}/quiz/results`, result, {
+        await axiosInstance.post(`/quiz/results`, result, {
           timeout: 5000,
           headers: {
             "Content-Type": "application/json",
